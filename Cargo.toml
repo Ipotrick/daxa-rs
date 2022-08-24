@@ -1,0 +1,12 @@
+[package]
+name = "daxa-rs"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "daxa is a mid level gpu abstraction library based on vulkan"
+homepage = "https://github.com/Ipotrick/daxa-rs"
+repository = "https://github.com/Ipotrick/daxa-rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
