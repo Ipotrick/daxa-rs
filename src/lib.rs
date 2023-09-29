@@ -1,3 +1,8 @@
+mod types;
+mod instance;
+pub use types::*;
+pub use instance::*;
+
 #[cfg(test)]
 mod tests {
     #[test]

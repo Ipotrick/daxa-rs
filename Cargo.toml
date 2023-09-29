@@ -11,3 +11,4 @@ repository = "https://github.com/Ipotrick/daxa-rs"
 
 [dependencies]
 daxa-sys = { path = "daxa-sys", version = "0.1.0", default-features = false }
+bitfield_struct = 0.5.4
