@@ -1,25 +1,70 @@
-use types::*;
+use crate::types::*;
+use bitflags::bitflags;
 use daxa_sys;
 
-pub struct Instance
-{
+pub struct Instance {
     instance: daxa_sys::daxa_Instance,
 }
 
-enum InstanceFlags
-{
-    EnableDebugUtil,
+bitflags! {
+    #[derive(Default)]
+    pub struct InstanceFlags: u64 {
+        const DEBUG_UTIL = daxa_sys::DAXA_INSTANCE_FLAG_DEBUG_UTIL;
+    }
 }
 
-struct InstanceInfo
-{
-    flags: InstanceFlags,
+#[repr(C)]
+#[derive(Default)]
+pub struct InstanceInfo {
+    pub flags: InstanceFlags,
 }
 
-impl Instance
-{
-    pub fn new(info: &InstanceInfo) -> Self
-    {
+#[derive(Debug)]
+pub enum InstanceCreateError {
+    MissingExtension,
+    Unknown,
+}
 
+impl std::fmt::Display for InstanceCreateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{:?}", &self)
+    }
+}
+impl std::error::Error for InstanceCreateError {}
+
+impl Instance {
+    pub fn new(info: &InstanceInfo) -> Result<Self, InstanceCreateError> {
+        let c_info = daxa_sys::daxa_InstanceInfo {
+            flags: info.flags.bits(),
+        };
+        unsafe {
+            let mut c_instance = std::mem::zeroed();
+            match daxa_sys::daxa_create_instance(&c_info, &mut c_instance) {
+                daxa_sys::daxa_Result_DAXA_RESULT_SUCCESS => Ok(Instance {
+                    instance: c_instance,
+                }),
+                daxa_sys::daxa_Result_DAXA_RESULT_MISSING_EXTENSION => {
+                    Err(InstanceCreateError::MissingExtension)
+                }
+                _ => Err(InstanceCreateError::Unknown),
+            }
+        }
+    }
+
+    pub fn info(&self) -> &InstanceInfo {
+        unsafe {
+            daxa_sys::daxa_instance_info(self.instance)
+                .cast::<InstanceInfo>()
+                .as_ref()
+                .unwrap()
+        }
+    }
+}
+
+impl Drop for Instance {
+    fn drop(&mut self) {
+        unsafe {
+            daxa_sys::daxa_destroy_instance(self.instance);
+        }
     }
 }
