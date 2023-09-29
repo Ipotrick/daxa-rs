@@ -1,7 +1,10 @@
 extern crate bindgen;
 
 fn main() {
-    let static_crt = std::env::var("CARGO_ENCODED_RUSTFLAGS")
+    use std::env;
+    use std::path::PathBuf;
+
+    let static_crt = env::var("CARGO_ENCODED_RUSTFLAGS")
         .unwrap_or_default()
         .contains("target-feature=+crt-static");
     let dst = cmake::Config::new("daxa")
@@ -14,21 +17,29 @@ fn main() {
             if static_crt { 1 } else { 0 }
         ))
         .build();
+    let vulkan_path = env::var("VULKAN_SDK").unwrap();
+
     println!(
         "cargo:rustc-link-search=native={}/build/{}",
         dst.display(),
         get_profile()
     );
+    println!(
+        "cargo:rustc-link-search=native={}/build/vcpkg_installed/{}/lib",
+        dst.display(),
+        get_vcpkg_os_dir()
+    );
+    println!("cargo:rustc-link-search=native={}/lib", vulkan_path);
     println!("cargo:rustc-link-lib=static=daxa");
-    use std::env;
-    use std::path::PathBuf;
+    println!("cargo:rustc-link-lib=static=fmt");
+    println!("cargo:rustc-link-lib=static=vulkan-1");
     println!("cargo:rerun-if-changed=src/daxa.h");
     println!("cargo:rerun-if-changed=daxa");
-    
-    // TODO: x64-windows? Consideration must be made for other OSes and even cross-compile.
+
     let vcpkg_includes = format!(
-        "-I{}/build/vcpkg_installed/x64-windows/include",
-        dst.display()
+        "-I{}/build/vcpkg_installed/{}/include",
+        dst.display(),
+        get_vcpkg_os_dir()
     );
     let bindings = bindgen::Builder::default()
         .clang_arg("--target=x86_64-pc-windows-msvc")
@@ -43,6 +54,16 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+}
+
+// TODO: Consideration must be made for other OSes and even cross-compile!
+#[cfg(target_os = "windows")]
+fn get_vcpkg_os_dir() -> &'static str {
+    "x64-windows"
+}
+#[cfg(target_os = "linux")]
+fn get_vcpkg_os_dir() -> &'static str {
+    "x64-linux"
 }
 
 fn get_profile() -> &'static str {
