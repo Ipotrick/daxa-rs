@@ -82,16 +82,8 @@ pub type VkDeviceSize = u64;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct VkMemoryRequirements {
-    size: VkDeviceSize,
-    alignment: VkDeviceSize,
-    memory_type_bits: u32,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy)]
 pub struct MemoryBlockInfo {
-    requirements: VkMemoryRequirements,
+    requirements: daxa_sys::VkMemoryRequirements,
     flags: MemoryFlags,
 }
 
@@ -154,6 +146,49 @@ impl<T: Clone + Copy> Into<std::option::Option<&mut T>> for *mut self::Option<T>
             } else {
                 None
             }
+        }
+    }
+}
+
+pub struct StringView<'a> {
+    ptr: *const os::raw::c_char,
+    len: usize,
+    //this does not affect size or alignment, only lifetime
+    marker: PhantomData<&'a str>,
+}
+
+impl<'a> StringView<'a> {
+    pub unsafe fn from_ptr(ptr: *const os::raw::c_char) -> StringView<'a> {
+        let mut len = 0;
+        while *ptr.add(len) != 0 {
+            len += 1;
+        }
+        Self {
+            ptr,
+            len,
+            marker: PhantomData,
+        }
+    }
+    pub unsafe fn from_mut_ptr(ptr: *mut os::raw::c_char) -> StringView<'a> {
+        let mut len = 0;
+        while *ptr.add(len) != 0 {
+            len += 1;
+        }
+        Self {
+            ptr,
+            len,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, const N: usize> From<&'a [u8; N]> for StringView<'a> {
+    fn from(data: &'a [u8; N]) -> Self {
+        let ptr = data as *const u8 as *const os::raw::c_char;
+        Self {
+            ptr,
+            len: N as _,
+            marker: PhantomData,
         }
     }
 }

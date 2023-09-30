@@ -47,9 +47,7 @@ impl Instance {
                 Success => Ok(Instance {
                     instance: c_instance,
                 }),
-                MissingExtension => {
-                    Err(InstanceCreateError::MissingExtension)
-                }
+                MissingExtension => Err(InstanceCreateError::MissingExtension),
                 _ => Err(InstanceCreateError::Unknown),
             }
         }
