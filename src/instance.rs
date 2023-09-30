@@ -34,16 +34,20 @@ impl std::error::Error for InstanceCreateError {}
 
 impl Instance {
     pub fn new(info: &InstanceInfo) -> Result<Self, InstanceCreateError> {
-        let c_info = daxa_sys::daxa_InstanceInfo {
-            flags: info.flags.bits(),
-        };
+        use crate::types::Result;
+        use Result::*;
         unsafe {
+            let c_info = (info as *const _).cast::<daxa_InstanceInfo>();
+
             let mut c_instance = std::mem::zeroed();
-            match daxa_sys::daxa_create_instance(&c_info, &mut c_instance) {
-                daxa_sys::daxa_Result_DAXA_RESULT_SUCCESS => Ok(Instance {
+
+            let c_result = daxa_sys::daxa_create_instance(c_info, &mut c_instance);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(Instance {
                     instance: c_instance,
                 }),
-                daxa_sys::daxa_Result_DAXA_RESULT_MISSING_EXTENSION => {
+                MissingExtension => {
                     Err(InstanceCreateError::MissingExtension)
                 }
                 _ => Err(InstanceCreateError::Unknown),

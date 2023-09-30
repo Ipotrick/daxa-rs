@@ -1,5 +1,6 @@
 mod types;
 mod instance;
+mod device;
 pub use types::*;
 pub use instance::*;
 
