@@ -26,9 +26,7 @@ bitflags! {
 pub type DeviceSelector = extern "C" fn(*const VkPhysicalDeviceProperties) -> i32;
 
 pub extern "C" fn default_device_selector(properties: *const VkPhysicalDeviceProperties) -> i32 {
-    unsafe {
-        daxa_sys::daxa_default_device_score(properties)
-    }
+    unsafe { daxa_sys::daxa_default_device_score(properties) }
 }
 
 pub const VK_UUID_SIZE: usize = 16;
@@ -54,7 +52,7 @@ pub struct DeviceInfo<'a> {
     max_allowed_images: u32,
     max_allowed_buffers: u32,
     max_allowed_samplers: u32,
-    name: crate::types::StringView<'a>
+    name: crate::types::StringView<'a>,
 }
 
 impl Default for DeviceInfo<'_> {
@@ -65,7 +63,7 @@ impl Default for DeviceInfo<'_> {
             max_allowed_images: 10000,
             max_allowed_buffers: 10000,
             max_allowed_samplers: 10000,
-            name: StringView::from(b"")
+            name: StringView::from(b""),
         }
     }
 }
@@ -126,7 +124,6 @@ bitflags! {
     }
 }
 
-
 pub struct CommandSubmitInfo<'a> {
     wait_stages: PipelineStageFlags,
     cmd_lists: &'a [CommandList],
@@ -165,7 +162,7 @@ pub struct ImageViewInfo<'a> {
     format: Format,
     image: ImageId,
     slice: ImageMipArraySlice,
-    name: crate::types::StringView<'a>
+    name: crate::types::StringView<'a>,
 }
 
 pub struct SamplerInfo {
@@ -173,7 +170,7 @@ pub struct SamplerInfo {
     format: Format,
     image: ImageId,
     slice: ImageMipArraySlice,
-    name: crate::types::StringView<'a>
+    name: crate::types::StringView<'a>,
 }
 
 struct BufferInternal {
@@ -188,21 +185,18 @@ pub struct Buffer {
 
 impl Buffer {
     fn id() -> BufferId {
-        unsafe {
-            self.internal.read().handle
-        }
+        unsafe { self.internal.read().handle }
     }
 }
 
 impl Drop for BufferInternal {
     fn drop(&mut self) {
-        unsafe { 
+        unsafe {
             let internal = self.internal.read();
-            daxa_sys::daxa_dvc_destroy_buffer(internal.device.handle, internal.handle); 
+            daxa_sys::daxa_dvc_destroy_buffer(internal.device.handle, internal.handle);
         }
     }
 }
-
 
 struct ImageInternal {
     device: Device,
@@ -216,17 +210,15 @@ pub struct Image {
 
 impl Image {
     fn id() -> ImageId {
-        unsafe {
-            self.internal.read().handle
-        }
+        unsafe { self.internal.read().handle }
     }
 }
 
 impl Drop for ImageInternal {
     fn drop(&mut self) {
-        unsafe { 
+        unsafe {
             let internal = self.internal.read();
-            daxa_sys::daxa_dvc_destroy_image(internal.device.handle, internal.handle); 
+            daxa_sys::daxa_dvc_destroy_image(internal.device.handle, internal.handle);
         }
     }
 }
@@ -243,21 +235,18 @@ pub struct ImageView {
 
 impl ImageView {
     fn id() -> ImageViewId {
-        unsafe {
-            self.internal.read().handle
-        }
+        unsafe { self.internal.read().handle }
     }
 }
 
 impl Drop for ImageViewInternal {
     fn drop(&mut self) {
-        unsafe { 
+        unsafe {
             let internal = self.internal.read();
-            daxa_sys::daxa_dvc_destroy_sampler(internal.device.handle, internal.handle); 
+            daxa_sys::daxa_dvc_destroy_sampler(internal.device.handle, internal.handle);
         }
     }
 }
-
 
 struct SamplerInternal {
     device: Device,
@@ -271,17 +260,15 @@ pub struct Sampler {
 
 impl Sampler {
     fn id() -> SamplerId {
-        unsafe {
-            self.internal.read().handle
-        }
+        unsafe { self.internal.read().handle }
     }
 }
 
 impl Drop for SamplerInternal {
     fn drop(&mut self) {
-        unsafe { 
+        unsafe {
             let internal = self.internal.read();
-            daxa_sys::daxa_dvc_destroy_image_view(internal.device.handle, internal.handle); 
+            daxa_sys::daxa_dvc_destroy_image_view(internal.device.handle, internal.handle);
         }
     }
 }
@@ -289,119 +276,140 @@ impl Drop for SamplerInternal {
 impl Device {
     fn buffer_memory_requirements(&self, info: &[BufferInfo]) -> MemoryRequirements {
         unsafe {
-            mem::transmute::<MemoryRequirements>(
-                daxa_sys::daxa_dvc_buffer_memory_requirements(self.handle, info.as_ptr())
-            )
+            mem::transmute::<MemoryRequirements>(daxa_sys::daxa_dvc_buffer_memory_requirements(
+                self.handle,
+                info.as_ptr(),
+            ))
         }
     }
-    
+
     fn image_memory_requirements(&self, info: &[ImageInfo]) -> MemoryRequirements {
         unsafe {
-            mem::transmute::<MemoryRequirements>(
-                daxa_sys::daxa_dvc_image_memory_requirements(self.handle, info.as_ptr())
-            )
+            mem::transmute::<MemoryRequirements>(daxa_sys::daxa_dvc_image_memory_requirements(
+                self.handle,
+                info.as_ptr(),
+            ))
         }
     }
-    
-    fn create_memory(&self, info: &'a [MemoryBlockInfo]) -> std::result::Result<MemoryBlock, crate::types::Result> {
+
+    fn create_memory(
+        &self,
+        info: &'a [MemoryBlockInfo],
+    ) -> std::result::Result<MemoryBlock, crate::types::Result> {
         use crate::types::Result;
         use Result::*;
         unsafe {
             let mut out_memory_block = mem::zeroed();
-            
-            let c_result = daxa_sys::daxa_dvc_create_memory(self.handle, info.as_ptr(), &mut out_memory_block);
+
+            let c_result =
+                daxa_sys::daxa_dvc_create_memory(self.handle, info.as_ptr(), &mut out_memory_block);
 
             match mem::transmute::<Result>(c_result) {
                 Success => Ok(out_memory_block),
-                _ => Err(c_result)
+                _ => Err(c_result),
             }
         }
     }
 
-    fn create_buffer(&self, info: &'a [BufferInfo]) -> std::result::Result<Buffer, crate::types::Result> {
+    fn create_buffer(
+        &self,
+        info: &'a [BufferInfo],
+    ) -> std::result::Result<Buffer, crate::types::Result> {
         use crate::types::Result;
         use Result::*;
         unsafe {
             let mut handle = mem::zeroed();
-            
-            let c_result = daxa_sys::daxa_dvc_create_buffer(self.handle, info.as_ptr(), &mut handle);
+
+            let c_result =
+                daxa_sys::daxa_dvc_create_buffer(self.handle, info.as_ptr(), &mut handle);
 
             let buffer = Buffer {
                 internal: Arc::new(BufferInternal {
                     handle,
-                    device: self.clone()
-                })
+                    device: self.clone(),
+                }),
             };
 
             match mem::transmute::<Result>(c_result) {
                 Success => Ok(buffer),
-                _ => Err(c_result)
+                _ => Err(c_result),
             }
         }
     }
 
-    fn create_image(&self, info: &'a [ImageInfo]) -> std::result::Result<Image, crate::types::Result> {
+    fn create_image(
+        &self,
+        info: &'a [ImageInfo],
+    ) -> std::result::Result<Image, crate::types::Result> {
         use crate::types::Result;
         use Result::*;
         unsafe {
             let mut handle = mem::zeroed();
-            
+
             let c_result = daxa_sys::daxa_dvc_create_image(self.handle, info.as_ptr(), &mut handle);
 
             let image = Buffer {
                 internal: Arc::new(ImageInternal {
                     handle,
-                    device: self.clone()
-                })
+                    device: self.clone(),
+                }),
             };
 
             match mem::transmute::<Result>(c_result) {
                 Success => Ok(image),
-                _ => Err(c_result)
+                _ => Err(c_result),
             }
         }
     }
 
-    fn create_image_view(&self, info: &'a [ImageViewInfo]) -> std::result::Result<ImageView, crate::types::Result> {
+    fn create_image_view(
+        &self,
+        info: &'a [ImageViewInfo],
+    ) -> std::result::Result<ImageView, crate::types::Result> {
         use crate::types::Result;
         use Result::*;
         unsafe {
             let mut handle = mem::zeroed();
-            
-            let c_result = daxa_sys::daxa_dvc_create_image_view(self.handle, info.as_ptr(), &mut handle);
+
+            let c_result =
+                daxa_sys::daxa_dvc_create_image_view(self.handle, info.as_ptr(), &mut handle);
 
             let image_view = ImageView {
                 internal: Arc::new(ImageViewInternal {
                     handle,
-                    device: self.clone()
-                })
+                    device: self.clone(),
+                }),
             };
 
             match mem::transmute::<Result>(c_result) {
                 Success => Ok(image_view),
-                _ => Err(c_result)
+                _ => Err(c_result),
             }
         }
     }
 
-    fn create_sampler(&self, info: &'a [SamplerInfo]) -> std::result::Result<Sampler, crate::types::Result> {
+    fn create_sampler(
+        &self,
+        info: &'a [SamplerInfo],
+    ) -> std::result::Result<Sampler, crate::types::Result> {
         use crate::types::Result;
         use Result::*;
         unsafe {
             let mut handle = mem::zeroed();
-            
-            let c_result = daxa_sys::daxa_dvc_create_sampler(self.handle, info.as_ptr(), &mut handle);
+
+            let c_result =
+                daxa_sys::daxa_dvc_create_sampler(self.handle, info.as_ptr(), &mut handle);
 
             let sampler = Sampler {
                 internal: Arc::new(SamplerInternal {
                     handle,
-                    device: self.clone()
-                })
+                    device: self.clone(),
+                }),
             };
 
             match mem::transmute::<Result>(c_result) {
                 Success => Ok(sampler),
-                _ => Err(c_result)
+                _ => Err(c_result),
             }
         }
     }
