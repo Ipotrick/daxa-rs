@@ -37,7 +37,7 @@ impl Instance {
         use crate::types::Result;
         use Result::*;
         unsafe {
-            let c_info = (info as *const _).cast::<daxa_InstanceInfo>();
+            let c_info = info.as_ptr().cast::<daxa_InstanceInfo>();
 
             let mut c_instance = std::mem::zeroed();
 
