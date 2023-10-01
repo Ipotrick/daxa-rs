@@ -1,4 +1,4 @@
-use bitflags::bitflags;
+daxa_sys bitflags::bitflags;
 use std::mem;
 use std::sync;
 
@@ -157,6 +157,8 @@ pub type ImageId = daxa_sys::daxa_ImageId;
 pub type ImageViewId = daxa_sys::daxa_ImageViewId;
 pub type SamplerId = daxa_sys::daxa_SamplerId;
 
+pub type BufferDeviceAddress = daxa_sys::daxa_BufferDeviceAddress;
+
 pub struct ImageViewInfo<'a> {
     ty: ImageViewType,
     format: Format,
@@ -184,7 +186,7 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    fn id() -> BufferId {
+    pub fn id() -> BufferId {
         unsafe { self.internal.read().handle }
     }
 }
@@ -209,7 +211,7 @@ pub struct Image {
 }
 
 impl Image {
-    fn id() -> ImageId {
+    pub fn id() -> ImageId {
         unsafe { self.internal.read().handle }
     }
 }
@@ -274,25 +276,25 @@ impl Drop for SamplerInternal {
 }
 
 impl Device {
-    fn buffer_memory_requirements(&self, info: &[BufferInfo]) -> MemoryRequirements {
+    pub fn buffer_memory_requirements(&self, info: &[BufferInfo]) -> MemoryRequirements {
         unsafe {
             mem::transmute::<MemoryRequirements>(daxa_sys::daxa_dvc_buffer_memory_requirements(
                 self.handle,
-                info.as_ptr(),
+                info.as_ptr().cast::<daxa_sys::daxa_BufferInfo>(),
             ))
         }
     }
 
-    fn image_memory_requirements(&self, info: &[ImageInfo]) -> MemoryRequirements {
+    pub fn image_memory_requirements(&self, info: &[ImageInfo]) -> MemoryRequirements {
         unsafe {
             mem::transmute::<MemoryRequirements>(daxa_sys::daxa_dvc_image_memory_requirements(
                 self.handle,
-                info.as_ptr(),
+                info.as_ptr().cast::<daxa_sys::daxa_ImageInfo>(),
             ))
         }
     }
 
-    fn create_memory(
+    pub fn create_memory(
         &self,
         info: &'a [MemoryBlockInfo],
     ) -> std::result::Result<MemoryBlock, crate::types::Result> {
@@ -302,7 +304,7 @@ impl Device {
             let mut out_memory_block = mem::zeroed();
 
             let c_result =
-                daxa_sys::daxa_dvc_create_memory(self.handle, info.as_ptr(), &mut out_memory_block);
+                daxa_sys::daxa_dvc_create_memory(self.handle, info.as_ptr().cast::<daxa_sys::daxa_MemoryBlockInfo>(), &mut out_memory_block);
 
             match mem::transmute::<Result>(c_result) {
                 Success => Ok(out_memory_block),
@@ -311,7 +313,7 @@ impl Device {
         }
     }
 
-    fn create_buffer(
+    pub fn create_buffer(
         &self,
         info: &'a [BufferInfo],
     ) -> std::result::Result<Buffer, crate::types::Result> {
@@ -321,7 +323,7 @@ impl Device {
             let mut handle = mem::zeroed();
 
             let c_result =
-                daxa_sys::daxa_dvc_create_buffer(self.handle, info.as_ptr(), &mut handle);
+                daxa_sys::daxa_dvc_create_buffer(self.handle, info.as_ptr().cast::<daxa_sys::daxa_BufferInfo>(), &mut handle);
 
             let buffer = Buffer {
                 internal: Arc::new(BufferInternal {
@@ -337,7 +339,7 @@ impl Device {
         }
     }
 
-    fn create_image(
+    pub fn create_image(
         &self,
         info: &'a [ImageInfo],
     ) -> std::result::Result<Image, crate::types::Result> {
@@ -346,7 +348,7 @@ impl Device {
         unsafe {
             let mut handle = mem::zeroed();
 
-            let c_result = daxa_sys::daxa_dvc_create_image(self.handle, info.as_ptr(), &mut handle);
+            let c_result = daxa_sys::daxa_dvc_create_image(self.handle, info.as_ptr().cast::<daxa_sys::daxa_ImageInfo>(), &mut handle);
 
             let image = Buffer {
                 internal: Arc::new(ImageInternal {
@@ -362,7 +364,7 @@ impl Device {
         }
     }
 
-    fn create_image_view(
+    pub fn create_image_view(
         &self,
         info: &'a [ImageViewInfo],
     ) -> std::result::Result<ImageView, crate::types::Result> {
@@ -372,7 +374,7 @@ impl Device {
             let mut handle = mem::zeroed();
 
             let c_result =
-                daxa_sys::daxa_dvc_create_image_view(self.handle, info.as_ptr(), &mut handle);
+                daxa_sys::daxa_dvc_create_image_view(self.handle, info.as_ptr().cast::<daxa_sys::daxa_ImageViewInfo>(), &mut handle);
 
             let image_view = ImageView {
                 internal: Arc::new(ImageViewInternal {
@@ -388,7 +390,7 @@ impl Device {
         }
     }
 
-    fn create_sampler(
+    pub fn create_sampler(
         &self,
         info: &'a [SamplerInfo],
     ) -> std::result::Result<Sampler, crate::types::Result> {
@@ -398,7 +400,7 @@ impl Device {
             let mut handle = mem::zeroed();
 
             let c_result =
-                daxa_sys::daxa_dvc_create_sampler(self.handle, info.as_ptr(), &mut handle);
+                daxa_sys::daxa_dvc_create_sampler(self.handle, info.as_ptr().cast::<daxa_sys::daxa_SamplerInfo>(), &mut handle);
 
             let sampler = Sampler {
                 internal: Arc::new(SamplerInternal {
@@ -410,6 +412,221 @@ impl Device {
             match mem::transmute::<Result>(c_result) {
                 Success => Ok(sampler),
                 _ => Err(c_result),
+            }
+        }
+    }
+
+    pub fn is_buffer_valid(&self, buffer: BufferId) -> bool {
+        unsafe { 
+            daxa_sys::daxa_dvc_is_buffer_valid(self.handle, buffer)
+        }
+    }
+    
+    pub fn is_image_valid(&self, image: ImageId) -> bool {
+        unsafe { 
+            daxa_sys::daxa_dvc_is_image_valid(self.handle, image)
+        }
+    }
+    
+    pub fn is_image_view_valid(&self, image_view: ImaegViewId) -> bool {
+        unsafe { 
+            daxa_sys::daxa_dvc_is_image_view_valid(self.handle, image_view)
+        }
+    }
+    
+    pub fn is_sampler_valid(&self, sampler: SamplerId) -> bool {
+        unsafe { 
+            daxa_sys::daxa_dvc_is_sampler_valid(self.handle, sampler)
+        }
+    }
+
+    pub fn create_raster_pipeline(&self, info: &crate::pipeline::RasterPipelineInfo) -> std::result::Result<crate::pipeline::RasterPipeline, crate::types::Result>  {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_RasterPipelineInfo>();
+
+            let mut raster_pipeline = std::mem::zeroed();
+
+            let c_result = daxa_sys::daxa_create_raster_pipeline(c_info, &mut raster_pipeline);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(raster_pipeline),
+                error => Err(error),
+            }
+        }
+    }
+
+    //compute
+    pub fn create_compute_pipeline(&self, info: &crate::pipeline::ComputePipelineInfo) -> std::result::Result<crate::pipeline::ComputePipeline, crate::types::Result>  {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_ComputePipelineInfo>();
+
+            let mut compute_pipeline = std::mem::zeroed();
+
+            let c_result = daxa_sys::daxa_create_compute_pipeline(c_info, &mut compute_pipeline);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(compute_pipeline),
+                error => Err(error),
+            }
+        }
+    }
+
+    //swapchain
+    pub fn create_swapchain(&self, info: &crate::pipeline::SwapchainInfo) -> std::result::Result<crate::pipeline::Swapchain, crate::types::Result>  {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_SwapchainInfo>();
+
+            let mut swapchain = std::mem::zeroed();
+
+            let c_result = daxa_sys::daxa_create_swapchain(c_info, &mut swapchain);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(swapchain),
+                error => Err(error),
+            }
+        }
+    }
+
+    //command list
+    pub fn create_command_list(&self, info: &crate::pipeline::CommandListInfo) -> std::result::Result<crate::pipeline::CommandList, crate::types::Result>  {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_CommandListInfo>();
+
+            let mut command_list = std::mem::zeroed();
+
+            let c_result = daxa_sys::daxa_create_command_list(c_info, &mut command_list);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(command_list),
+                error => Err(error),
+            }
+        }
+    }
+
+    //binary semaphore
+    pub fn create_binary_semaphore(&self, info: &crate::pipeline::BinarySemaphoreInfo) -> std::result::Result<crate::pipeline::BinarySemaphore, crate::types::Result>  {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_BinarySemaphoreInfo>();
+
+            let mut binary_semaphore = std::mem::zeroed();
+
+            let c_result = daxa_sys::daxa_create_binary_semaphore(c_info, &mut binary_semaphore);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(binary_semaphore),
+                error => Err(error),
+            }
+        }
+    }
+
+    //timeline semaphore
+    pub fn create_timeline_semaphore(&self, info: &crate::pipeline::TimelineSemaphoreInfo) -> std::result::Result<crate::pipeline::TimelineSemaphore, crate::types::Result>  {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_TimelineSemaphoreInfo>();
+
+            let mut timeline_semaphore = std::mem::zeroed();
+
+            let c_result = daxa_sys::daxa_create_timeline_semaphore(c_info, &mut timeline_semaphore);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(timeline_semaphore),
+                error => Err(error),
+            }
+        }
+    }
+
+    //event
+    pub fn create_event(&self, info: &crate::pipeline::EventInfo) -> std::result::Result<crate::pipeline::Event, crate::types::Result>  {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_EventInfo>();
+
+            let mut event = std::mem::zeroed();
+
+            let c_result = daxa_sys::daxa_create_event(c_info, &mut event);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(event),
+                error => Err(error),
+            }
+        }
+    }
+
+    //timeline query_pool
+    pub fn create_timeline_query_pool(&self, info: &crate::pipeline::TimelineQueryInfoInfo) -> std::result::Result<crate::pipeline::TimelineQueryInfo, crate::types::Result>  {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_TimelineQueryInfoInfo>();
+
+            let mut timeline_query_pool = std::mem::zeroed();
+
+            let c_result = daxa_sys::daxa_create_timeline_query_pool(c_info, &mut timeline_query_pool);
+
+            match mem::transmute::<Result>(c_result) {
+                Success => Ok(timeline_query_pool),
+                error => Err(error),
+            }
+        }
+    }
+
+    pub fn buffer_device_address(&self, buffer: BufferId) -> BufferDeviceAddress {
+        unsafe {
+            let mut address = mem::zeroed();
+            daxa_sys::daxa_dvc_buffer_device_address(self.handle, buffer, &mut address);
+            address
+        }
+    }
+
+    pub fn buffer_host_address(&self, buffer: BufferId) -> *mut () {
+        unsafe {
+            let mut address = mem::zeroed();
+            daxa_sys::daxa_dvc_buffer_device_address(self.handle, buffer, &mut address as _ as _);
+            address
+        }
+    }
+
+    pub fn info(&self) -> &DeviceInfo {
+        unsafe {
+            daxa_sys::daxa_dvc_info(self.handle).as_ref().unwrap()
+        }
+    }
+
+    //TODO submit
+    //TODO present
+
+    pub fn wait_idle() -> crate::result::Result<(), crate::types::Result> {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            match mem::transmute::<Result>(daxa_sys::daxa_dvc_wait_idle(self.handle)) {
+                Success => Ok(()),
+                error => Err(error),
+            }
+        }
+    }
+
+    
+    pub fn collect_garbage() -> crate::result::Result<(), crate::types::Result> {
+        use crate::types::Result;
+        use Result::Success;
+        unsafe {
+            match mem::transmute::<Result>(daxa_sys::daxa_dvc_collect_garbage(self.handle)) {
+                Success => Ok(()),
+                error => Err(error),
             }
         }
     }
