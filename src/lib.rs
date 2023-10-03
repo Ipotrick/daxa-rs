@@ -1,5 +1,6 @@
 mod device;
 mod instance;
+mod pipeline;
 mod types;
 pub use instance::*;
 pub use types::*;
