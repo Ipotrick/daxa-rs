@@ -1,14 +1,15 @@
 use bitflags::bitflags;
-use std::os;
+use std::{marker::PhantomData, mem, os};
+
+use crate::device::{Device, DeviceType};
 
 #[repr(i32)]
 pub enum Result {
-    Unknown = daxa_sys::daxa_Result_DAXA_RESULT_UNKNOWN,
     Success = daxa_sys::daxa_Result_DAXA_RESULT_SUCCESS,
     MissingExtension = daxa_sys::daxa_Result_DAXA_RESULT_MISSING_EXTENSION,
 }
 
-#[repr(i32)]
+#[repr(u32)]
 pub enum ImageLayout {
     Undefined = daxa_sys::daxa_ImageLayout_DAXA_IMAGE_LAYOUT_UNDEFINED,
     General = daxa_sys::daxa_ImageLayout_DAXA_IMAGE_LAYOUT_GENERAL,
@@ -28,7 +29,7 @@ pub struct Vec2<T> {
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct Vec2<T> {
+pub struct Vec3<T> {
     x: T,
     y: T,
     z: T,
@@ -36,7 +37,7 @@ pub struct Vec2<T> {
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct Vec2<T> {
+pub struct Vec4<T> {
     x: T,
     y: T,
     z: T,
@@ -68,6 +69,261 @@ pub struct ImageSlice {
 
 bitflags! {
     #[derive(Default)]
+    pub struct PipelineStageFlags: i32 {
+        const TOP_OF_PIPE_BIT = daxa_sys::VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+        const DRAW_INDIRECT_BIT = daxa_sys::VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+        const VERTEX_INPUT_BIT = daxa_sys::VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
+        const VERTEX_SHADER_BIT = daxa_sys::VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+        const TESSELLATION_CONTROL_SHADER_BIT = daxa_sys::VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT;
+        const TESSELLATION_EVALUATION_SHADER_BIT = daxa_sys::VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT;
+        const GEOMETRY_SHADER_BIT = daxa_sys::VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;
+        const FRAGMENT_SHADER_BIT = daxa_sys::VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+        const EARLY_FRAGMENT_TESTS_BIT = daxa_sys::VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+        const LATE_FRAGMENT_TESTS_BIT = daxa_sys::VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+        const COLOR_ATTACHMENT_OUTPUT_BIT = daxa_sys::VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+        const COMPUTE_SHADER_BIT = daxa_sys::VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        const TRANSFER_BIT = daxa_sys::VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        const BOTTOM_OF_PIPE_BIT = daxa_sys::VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+        const HOST_BIT = daxa_sys::VK_PIPELINE_STAGE_2_HOST_BIT;
+        const ALL_GRAPHICS_BIT = daxa_sys::VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+        const ALL_COMMANDS_BIT = daxa_sys::VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        const NONE = daxa_sys::VK_PIPELINE_STAGE_2_NONE;
+        const TRANSFORM_FEEDBACK_BIT_EXT = daxa_sys::VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
+        const CONDITIONAL_RENDERING_BIT_EXT = daxa_sys::VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT;
+        const ACCELERATION_STRUCTURE_BUILD_BIT_KHR = daxa_sys::VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+        const RAY_TRACING_SHADER_BIT_KHR = daxa_sys::VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+        const FRAGMENT_DENSITY_PROCESS_BIT_EXT = daxa_sys::VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT;
+        const FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = daxa_sys::VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+        const COMMAND_PREPROCESS_BIT_NV = daxa_sys::VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV;
+        const TASK_SHADER_BIT_EXT = daxa_sys::VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT;
+        const MESH_SHADER_BIT_EXT = daxa_sys::VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
+        const SHADING_RATE_IMAGE_BIT_NV = daxa_sys::VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+        const RAY_TRACING_SHADER_BIT_NV = daxa_sys::VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+        const ACCELERATION_STRUCTURE_BUILD_BIT_NV = daxa_sys::VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+        const TASK_SHADER_BIT_NV = daxa_sys::VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT;
+        const MESH_SHADER_BIT_NV = daxa_sys::VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
+        const NONE_KHR = daxa_sys::VK_PIPELINE_STAGE_2_NONE;
+    }
+}
+
+bitflags! {
+    pub struct ImageViewType: i32 {
+        const ONE_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_1D;
+        const TWO_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_2D;
+        const THREE_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_3D;
+        const CUBE = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_CUBE;
+        const ONE_DIM_ARRAY = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+        const TWO_DIM_ARRAY = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        const CUBE_ARRAY = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+    }
+}
+
+bitflags! {
+    pub struct Filter: i32 {
+        const NEAREST = daxa_sys::VkFilter_VK_FILTER_NEAREST;
+        const LINEAR = daxa_sys::VkFilter_VK_FILTER_LINEAR;
+        const CUBIC_EXT = daxa_sys::VkFilter_VK_FILTER_CUBIC_EXT;
+        const CUBIC_IMG = daxa_sys::VkFilter_VK_FILTER_CUBIC_IMG;
+    }
+}
+
+bitflags! {
+    pub struct ImageCreateFlags: i32 {
+        const SPARSE_BINDING = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
+        const SPARSE_RESIDENCY = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
+        const SPARSE_ALIASED = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
+        const MUTABLE_FORMAT = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+        const CUBE_COMPATIBLE = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+        const ALIAS = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_ALIAS_BIT;
+        const SPLIT_INSTANCE_BIND_REGIONS = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT;
+        const TWO_DIM_ARRAY_COMPATIBLE_BIT = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
+        const BLOCK_TEXEL_VIEW_COMPATIBLE = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
+        const EXTENDED_USAGE = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+        const PROTECTED = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_PROTECTED_BIT;
+        const DISJOINT = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_DISJOINT_BIT;
+        const CORNER_SAMPLED = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV;
+        const SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+        const SUBSAMPLED = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
+        const DESCRIPTOR_BUFFER_CAPTURE_REPLAY = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+        const MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT;
+        const TWO_DIM_VIEW_COMPATIBLE = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT;
+        const FRAGMENT_DENSITY_MAP_OFFSET = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM;
+    }
+}
+bitflags! {
+    pub struct ImageUsageFlags: i32 {
+        const TRANSFER_SRC = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        const TRANSFER_DST = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        const SAMPLED = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_SAMPLED_BIT;
+        const STORAGE = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_STORAGE_BIT;
+        const COLOR_ATTACHMENT = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        const DEPTH_STENCIL_ATTACHMENT = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        const TRANSIENT_ATTACHMENT = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+        const VIDEO_DECODE_DST = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;
+        const VIDEO_DECODE_SRC = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR;
+        const VIDEO_DECODE_DPB = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
+        const FRAGMENT_DENSITY_MAP = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_SAMPLED_BIT;
+        const FRAGMENT_SHADING_RATE_ATTACHMENT = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT;
+        const HOST_TRANSFER = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
+        const INVOCATION_MASK = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI;
+        const SAMPLE_WEIGHT = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM;
+        const SAMPLE_BLOCK_MATCH = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM;
+    }
+}
+
+#[repr(u32)]
+pub enum SamplerAddressMode {
+    Repeat = daxa_sys::VkSamplerAddressMode_VK_SAMPLER_ADDRESS_MODE_REPEAT,
+    MirroredRepeat = daxa_sys::VkSamplerAddressMode_VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
+    ClampToEdge = daxa_sys::VkSamplerAddressMode_VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    ClampToBorder = daxa_sys::VkSamplerAddressMode_VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+    MirroredClampToBorder =
+        daxa_sys::VkSamplerAddressMode_VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,
+}
+
+#[repr(u32)]
+enum ReductionMode {
+    WeightedAverage = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE,
+    Min = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_MIN,
+    Max = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_MAX,
+}
+
+pub enum Extent {
+    OneDim(u32),
+    TwoDim(u32, u32),
+    ThreeDim(u32, u32, u32),
+}
+
+pub struct CommandSubmitInfo<'a> {
+    pub wait_stages: PipelineStageFlags,
+    pub cmd_recorders: &'a [CommandRecorder],
+    pub wait_binary_semaphores: &'a [BinarySemaphore],
+    pub signal_binary_semaphores: &'a [BinarySemaphore],
+    pub wait_timeline_semaphores: &'a [BinarySemaphore],
+    pub signal_timeline_semaphores: &'a [BinarySemaphore],
+}
+
+pub struct PresentInfo<'a> {
+    pub wait_binary_semaphores: &'a [BinarySemaphore],
+    pub swapchain: Swapchain,
+}
+
+pub type BufferId = daxa_sys::daxa_BufferId;
+pub type ImageId = daxa_sys::daxa_ImageId;
+pub type ImageViewId = daxa_sys::daxa_ImageViewId;
+pub type SamplerId = daxa_sys::daxa_SamplerId;
+
+pub type BufferDeviceAddress = u64;
+
+pub struct BufferInfo {
+    pub size: usize,
+    pub allocate_info: MemoryFlags,
+    pub name: SmallString,
+}
+
+pub struct ImageInfo {
+    pub flags: ImageCreateFlags,
+    pub extent: Extent,
+    pub format: Format,
+    pub mip_level_count: u32,
+    pub array_layer_count: u32,
+    pub sample_count: u32,
+    pub usage: ImageUsageFlags,
+    pub allocate_info: MemoryFlags,
+    pub name: SmallString,
+}
+
+pub struct ImageViewInfo {
+    pub ty: ImageViewType,
+    pub format: Format,
+    pub image: ImageId,
+    pub slice: ImageMipArraySlice,
+    pub name: SmallString,
+}
+
+pub struct SamplerInfo {
+    pub magnification_filter: Filter,
+    pub minification_filter: Filter,
+    pub mipmap_filter: Filter,
+    pub reduction_mode: ReductionMode,
+    pub address_mode_u: SamplerAddressMode,
+    pub address_mode_v: SamplerAddressMode,
+    pub address_mode_w: SamplerAddressMode,
+    pub mip_lod_bias: f32,
+    pub enable_anisotropy: bool,
+    pub max_anisotropy: f32,
+    pub compare_op: CompareOp,
+    pub min_lod: f32,
+    pub max_lod: f32,
+    pub border_color: BorderColor,
+    pub enable_unnormalized_coordinates: bool,
+    pub name: SmallString,
+}
+
+#[derive(Clone)]
+pub struct Buffer {
+    pub(crate) device: Device,
+    pub(crate) handle: BufferId,
+}
+
+impl Buffer {
+    pub fn id(&self) -> BufferId {
+        unsafe { self.handle }
+    }
+}
+
+#[derive(Clone)]
+struct Image {
+    pub(crate) device: Device,
+    pub(crate) handle: ImageId,
+}
+
+impl Image {
+    pub fn id(&self) -> ImageId {
+        self.handle
+    }
+}
+
+#[derive(Clone)]
+struct ImageView {
+    device: Device,
+    handle: ImageViewId,
+}
+
+impl ImageView {
+    fn id(&self) -> ImageViewId {
+        self.handle
+    }
+}
+
+#[derive(Clone)]
+pub struct Sampler {
+    pub(crate) device: Device,
+    pub(crate) handle: SamplerId,
+}
+
+impl Sampler {
+    fn id(&self) -> SamplerId {
+        self.handle
+    }
+}
+
+#[repr(u32)]
+pub enum CompareOp {
+    Never = daxa_sys::VkCompareOp_VK_COMPARE_OP_NEVER,
+    Less = daxa_sys::VkCompareOp_VK_COMPARE_OP_LESS,
+    Equal = daxa_sys::VkCompareOp_VK_COMPARE_OP_EQUAL,
+    LessOrEqual = daxa_sys::VkCompareOp_VK_COMPARE_OP_LESS_OR_EQUAL,
+    Greater = daxa_sys::VkCompareOp_VK_COMPARE_OP_GREATER,
+    NotEqual = daxa_sys::VkCompareOp_VK_COMPARE_OP_NOT_EQUAL,
+    GreaterOrEqual = daxa_sys::VkCompareOp_VK_COMPARE_OP_GREATER_OR_EQUAL,
+    Always = daxa_sys::VkCompareOp_VK_COMPARE_OP_ALWAYS,
+}
+
+pub type DeviceSize = u64;
+
+bitflags! {
+    #[derive(Default)]
     pub struct MemoryFlags: u32 {
         const DEDICATED_MEMORY = daxa_sys::DAXA_MEMORY_FLAG_DEDICATED_MEMORY;
         const CAN_ALIAS = daxa_sys::DAXA_MEMORY_FLAG_CAN_ALIAS;
@@ -78,7 +334,13 @@ bitflags! {
     }
 }
 
-pub type VkDeviceSize = u64;
+pub type MemoryBlock = daxa_sys::daxa_MemoryBlock;
+
+pub struct MemoryRequirements {
+    size: DeviceSize,
+    alignment: DeviceSize,
+    memory_type_bits: u32,
+}
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -103,16 +365,16 @@ pub union AllocInfo {
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct AllocateInfo {
+pub struct MemoryAllocateInfo {
     index: u64,
     info: AllocInfo,
 }
 
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct AllocateInfo<'a> {
+#[derive(Clone)]
+pub struct AllocateInfo {
     query_count: u32,
-    name: StringView<'a>,
+    name: SmallString,
 }
 
 #[repr(C)]
@@ -122,79 +384,65 @@ pub struct Option<T> {
     has_value: bool,
 }
 
-impl<T: Clone + Copy> Into<std::option::Option<&T>> for *const self::Option<T> {
-    fn into(self) -> std::option::Option<&T> {
-        unsafe {
-            let this = self.as_ref().unwrap();
-            if this.has_value {
-                drop(this);
-                Some(unsafe { self.cast::<T>().as_ref().unwrap() })
-            } else {
-                None
+impl<T: 'static> From<std::option::Option<T>> for Option<T> {
+    fn from(value: std::option::Option<T>) -> Self {
+        let Some(data) = value else {
+            return Option {
+                data: unsafe { mem::MaybeUninit::uninit().assume_init() },
+                has_value: false,
             }
+        };
+
+        Option {
+            data,
+            has_value: true,
         }
     }
 }
 
-impl<T: Clone + Copy> Into<std::option::Option<&mut T>> for *mut self::Option<T> {
-    fn into(self) -> std::option::Option<&T> {
-        unsafe {
-            let this = self.as_ref().unwrap();
-            if this.has_value {
-                drop(this);
-                Some(unsafe { self.cast::<T>().as_mut().unwrap() })
-            } else {
-                None
-            }
-        }
+impl<T: 'static> Into<std::option::Option<T>> for Option<T> {
+    fn into(self) -> std::option::Option<T> {
+        let Option { has_value: true, .. } = &self else {
+            return None;
+        };
+        Some(self.data)
     }
 }
 
-pub struct StringView<'a> {
-    ptr: *const os::raw::c_char,
-    len: usize,
-    //this does not affect size or alignment, only lifetime
-    marker: PhantomData<&'a str>,
+pub struct FixedString<const Capacity: usize> {
+    data: [std::os::raw::c_char; Capacity],
+    len: u8
 }
 
-impl<'a> StringView<'a> {
-    pub unsafe fn from_ptr(ptr: *const os::raw::c_char) -> StringView<'a> {
+impl<const Capacity: usize> FixedString {
+    pub unsafe fn from_ptr(ptr: *const os::raw::c_char, len: usize) -> Self {
+        let mut data = [Default::default(); Capacity];
+        unsafe { std::ptr::copy(string.as_bytes(), &mut data, len) };
+        Self {
+            data,
+            len,
+        }
+    }
+    pub unsafe fn from_ptr_null_terminated(ptr: *const os::raw::c_char) -> Self {
         let mut len = 0;
         while *ptr.add(len) != 0 {
             len += 1;
         }
-        Self {
-            ptr,
-            len,
-            marker: PhantomData,
-        }
+        Self::from_ptr(ptr, len)
     }
-    pub unsafe fn from_mut_ptr(ptr: *mut os::raw::c_char) -> StringView<'a> {
-        let mut len = 0;
-        while *ptr.add(len) != 0 {
-            len += 1;
-        }
-        Self {
-            ptr,
-            len,
-            marker: PhantomData,
-        }
+    
+}
+
+impl<const Capacity: usize> From<&'a str> for FixedString  {
+    fn from(string: &'a str) -> Self {
+        assert!(string.bytes().len() < Capacity);
+        unsafe { Self::from_ptr(string.as_bytes(), string.bytes().len()) }
     }
 }
 
-impl<'a, const N: usize> From<&'a [u8; N]> for StringView<'a> {
-    fn from(data: &'a [u8; N]) -> Self {
-        let ptr = data as *const u8 as *const os::raw::c_char;
-        Self {
-            ptr,
-            len: N as _,
-            marker: PhantomData,
-        }
-    }
-}
+pub type SmallString = FixedString<39>;
 
-#[derive(Default)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum Format {
     UNDEFINED = daxa_sys::VkFormat_VK_FORMAT_UNDEFINED,
     R4G4_UNORM_PACK8 = daxa_sys::VkFormat_VK_FORMAT_R4G4_UNORM_PACK8,
@@ -539,4 +787,21 @@ pub enum Format {
     G16_B16R16_2PLANE_444_UNORM_EXT = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
     A4R4G4B4_UNORM_PACK16_EXT = daxa_sys::VkFormat_VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
     A4B4G4R4_UNORM_PACK16_EXT = daxa_sys::VkFormat_VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+}
+
+pub const VK_UUID_SIZE: usize = 16;
+
+pub type VkPhysicalDeviceLimits = daxa_sys::VkPhysicalDeviceLimits;
+pub type VkPhysicalDeviceSparseProperties = daxa_sys::VkPhysicalDeviceSparseProperties;
+
+pub struct VkPhysicalDeviceProperties<'a> {
+    api_version: u32,
+    driver_version: u32,
+    vendor_id: u32,
+    device_id: u32,
+    device_type: DeviceType,
+    device_name: StringView<'a>,
+    pipeline_cache_uuid: [u8; VK_UUID_SIZE],
+    limits: VkPhysicalDeviceLimits,
+    sparse_properties: VkPhysicalDeviceSparseProperties,
 }

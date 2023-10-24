@@ -1,3 +1,5 @@
+use std::mem;
+
 use crate::types::*;
 use bitflags::bitflags;
 use daxa_sys;
@@ -33,11 +35,11 @@ impl std::fmt::Display for InstanceCreateError {
 impl std::error::Error for InstanceCreateError {}
 
 impl Instance {
-    pub fn new(info: &InstanceInfo) -> Result<Self, InstanceCreateError> {
+    pub fn new(info: &InstanceInfo) -> std::result::Result<Self, InstanceCreateError> {
         use crate::types::Result;
         use Result::*;
         unsafe {
-            let c_info = info.as_ptr().cast::<daxa_InstanceInfo>();
+            let c_info = info.as_ptr().cast::<daxa_sys::daxa_InstanceInfo>();
 
             let mut c_instance = std::mem::zeroed();
 
@@ -63,10 +65,10 @@ impl Instance {
     }
 }
 
-impl Drop for Instance {
-    fn drop(&mut self) {
-        unsafe {
-            daxa_sys::daxa_destroy_instance(self.instance);
-        }
-    }
-}
+// impl Drop for Instance {
+//     fn drop(&mut self) {
+//         unsafe {
+//             daxa_sys::daxa_dvc_destroy_instance(self.instance);
+//         }
+//     }
+// }

@@ -1,26 +1,14 @@
 use bitflags::bitflags;
 
-use crate::{types, Format};
+use crate::{types, CompareOp, Format};
 
-pub type RasterPipeline = daxa_sys::RasterPipeline;
+pub type RasterPipeline = daxa_sys::daxa_RasterPipeline;
 
 #[repr(C)]
 pub struct ShaderInfo<'a> {
     byte_code: *const u32,
     byte_code_size: usize,
     entry_point: types::StringView<'a>,
-}
-
-#[repr(i32)]
-pub enum CompareOp {
-    Never = daxa_sys::VkCompareOp_VK_COMPARE_OP_NEVER,
-    Less = daxa_sys::VkCompareOp_VK_COMPARE_OP_LESS,
-    Equal = daxa_sys::VkCompareOp_VK_COMPARE_OP_EQUAL,
-    LessOrEqual = daxa_sys::VkCompareOp_VK_COMPARE_OP_LESS_OR_EQUAL,
-    Greater = daxa_sys::VkCompareOp_VK_COMPARE_OP_GREATER,
-    NotEqual = daxa_sys::VkCompareOp_VK_COMPARE_OP_NOT_EQUAL,
-    GreaterOrEqual = daxa_sys::VkCompareOp_VK_COMPARE_OP_GREATER_OR_EQUAL,
-    Always = daxa_sys::VkCompareOp_VK_COMPARE_OP_ALWAYS,
 }
 
 #[repr(C)]
@@ -50,7 +38,7 @@ pub struct RenderAttachment {
     blend: types::Option<BlendInfo>,
 }
 
-#[repr(i32)]
+#[repr(u32)]
 pub enum BlendFactor {
     Zero = daxa_sys::VkBlendFactor_VK_BLEND_FACTOR_ZERO,
     One = daxa_sys::VkBlendFactor_VK_BLEND_FACTOR_ONE,
@@ -73,7 +61,7 @@ pub enum BlendFactor {
     OneMinusSrc1Alpha = daxa_sys::VkBlendFactor_VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,
 }
 
-#[repr(i32)]
+#[repr(u32)]
 pub enum BlendOp {
     Add = daxa_sys::VkBlendOp_VK_BLEND_OP_ADD,
     Subtract = daxa_sys::VkBlendOp_VK_BLEND_OP_SUBTRACT,
@@ -131,10 +119,10 @@ pub enum BlendOp {
 bitflags! {
     #[derive(Default)]
     pub struct ColorComponentFlags: u32 {
-        const R = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_R_BIT,
-        const G = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_G_BIT,
-        const B = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_B_BIT,
-        const A = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_A_BIT,
+        const R = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_R_BIT;
+        const G = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_G_BIT;
+        const B = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_B_BIT;
+        const A = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_A_BIT;
     }
 }
 
@@ -166,13 +154,14 @@ impl Default for BlendInfo {
     }
 }
 
-#[repr(i32)]
+#[repr(u32)]
 pub enum TesselationDomainOrigin {
-    #[default]
-    UpperLeft = daxa_sys::VkTesselationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
-    LowerLeft = daxa_sys::VkTesselationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT,
-    UpperLeftKhr = daxa_sys::VkTesselationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR,
-    LowerLeftKhr = daxa_sys::VkTesselationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR,
+    UpperLeft = daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
+    LowerLeft = daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT,
+    UpperLeftKhr =
+        daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR,
+    LowerLeftKhr =
+        daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR,
 }
 
 #[repr(C)]
@@ -181,26 +170,26 @@ pub struct TesselationInfo {
     origin: TesselationDomainOrigin,
 }
 
-#[repr(i32)]
+#[repr(u32)]
 pub enum PrimitiveTopology {
-    PointList = daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-    LineList = daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
-    LineStrip = daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
-    TriangleList = daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-    TriangleStrip = daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-    TriangleFan = daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
+    PointList = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+    LineList = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+    LineStrip = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
+    TriangleList = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    TriangleStrip = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+    TriangleFan = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
     LineListWithAdjacency =
-        daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
+        daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
     LineStripWithAdjacency =
-        daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
+        daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
     TriangleListWithAdjacency =
-        daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
+        daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
     TriangleStripWithAdjacency =
-        daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
-    PatchList = daxa_rs::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+        daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
+    PatchList = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
 }
 
-#[repr(i32)]
+#[repr(u32)]
 pub enum PolygonMode {
     Fill = daxa_sys::VkPolygonMode_VK_POLYGON_MODE_FILL,
     Line = daxa_sys::VkPolygonMode_VK_POLYGON_MODE_LINE,
@@ -211,20 +200,20 @@ pub enum PolygonMode {
 bitflags! {
     #[derive(Default)]
     pub struct CullModeFlags: u32 {
-        const NONE = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_NONE,
-        const FRONT_BIT = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_FRONT_BIT,
-        const BACK_BIT = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_BACK_BIT,
-        const FRONT_AND_BACK = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_FRONT_AND_BACK,
+        const NONE = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_NONE;
+        const FRONT_BIT = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_FRONT_BIT;
+        const BACK_BIT = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_BACK_BIT;
+        const FRONT_AND_BACK = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_FRONT_AND_BACK;
     }
 }
 
-#[repr(i32)]
+#[repr(u32)]
 pub enum FrontFace {
     CounterClockwise = daxa_sys::VkFrontFace_VK_FRONT_FACE_COUNTER_CLOCKWISE,
     Clockwise = daxa_sys::VkFrontFace_VK_FRONT_FACE_CLOCKWISE,
 }
 
-#[repr(i32)]
+#[repr(u32)]
 pub enum ConsevativeRasterizationModeEXT {
     DisabledExt = daxa_sys::VkConservativeRasterizationModeEXT_VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT,
     OverestimateExt = daxa_sys::VkConservativeRasterizationModeEXT_VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT,
