@@ -182,10 +182,20 @@ pub enum SamplerAddressMode {
 }
 
 #[repr(u32)]
-enum ReductionMode {
+pub enum ReductionMode {
     WeightedAverage = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE,
     Min = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_MIN,
     Max = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_MAX,
+}
+
+#[repr(u32)]
+pub enum BorderColor {
+    FloatTransparentBlack = daxa_sys::VkBorderColor_VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+    IntTransparentBlack = daxa_sys::VkBorderColor_VK_BORDER_COLOR_INT_TRANSPARENT_BLACK,
+    FloatOpaqueBlack = daxa_sys::VkBorderColor_VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+    IntOpaqueBlack = daxa_sys::VkBorderColor_VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+    FloatOpaqueWhite = daxa_sys::VkBorderColor_VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+    IntOpaqueWhite = daxa_sys::VkBorderColor_VK_BORDER_COLOR_INT_OPAQUE_WHITE,
 }
 
 pub enum Extent {
@@ -215,12 +225,14 @@ pub type SamplerId = daxa_sys::daxa_SamplerId;
 
 pub type BufferDeviceAddress = u64;
 
+#[repr(C)]
 pub struct BufferInfo {
     pub size: usize,
     pub allocate_info: MemoryFlags,
     pub name: SmallString,
 }
 
+#[repr(C)]
 pub struct ImageInfo {
     pub flags: ImageCreateFlags,
     pub extent: Extent,
@@ -233,6 +245,7 @@ pub struct ImageInfo {
     pub name: SmallString,
 }
 
+#[repr(C)]
 pub struct ImageViewInfo {
     pub ty: ImageViewType,
     pub format: Format,
@@ -241,6 +254,7 @@ pub struct ImageViewInfo {
     pub name: SmallString,
 }
 
+#[repr(C)]
 pub struct SamplerInfo {
     pub magnification_filter: Filter,
     pub minification_filter: Filter,
@@ -261,50 +275,41 @@ pub struct SamplerInfo {
 }
 
 #[derive(Clone)]
-pub struct Buffer {
-    pub(crate) device: Device,
-    pub(crate) handle: BufferId,
-}
-
+#[repr(C)]
+pub struct Buffer(pub(crate) BufferId);
 impl Buffer {
     pub fn id(&self) -> BufferId {
-        unsafe { self.handle }
+        self.0
     }
 }
 
 #[derive(Clone)]
-struct Image {
-    pub(crate) device: Device,
-    pub(crate) handle: ImageId,
-}
+#[repr(C)]
+struct Image(pub(crate) ImageId);
 
 impl Image {
     pub fn id(&self) -> ImageId {
-        self.handle
+        self.0
     }
 }
 
 #[derive(Clone)]
-struct ImageView {
-    device: Device,
-    handle: ImageViewId,
-}
+#[repr(C)]
+struct ImageView (pub(crate) ImageViewId);
 
 impl ImageView {
     fn id(&self) -> ImageViewId {
-        self.handle
+        self.0
     }
 }
 
 #[derive(Clone)]
-pub struct Sampler {
-    pub(crate) device: Device,
-    pub(crate) handle: SamplerId,
-}
+#[repr(C)]
+pub struct Sampler(pub(crate) SamplerId);
 
 impl Sampler {
     fn id(&self) -> SamplerId {
-        self.handle
+        self.0
     }
 }
 
@@ -414,10 +419,10 @@ pub struct FixedString<const Capacity: usize> {
     len: u8
 }
 
-impl<const Capacity: usize> FixedString {
+impl<const Capacity: usize> FixedString<Capacity> {
     pub unsafe fn from_ptr(ptr: *const os::raw::c_char, len: usize) -> Self {
         let mut data = [Default::default(); Capacity];
-        unsafe { std::ptr::copy(string.as_bytes(), &mut data, len) };
+        unsafe { std::ptr::copy(ptr, &mut data, len) };
         Self {
             data,
             len,
@@ -433,7 +438,7 @@ impl<const Capacity: usize> FixedString {
     
 }
 
-impl<const Capacity: usize> From<&'a str> for FixedString  {
+impl<'a, const Capacity: usize> From<&'a str> for FixedString<Capacity>  {
     fn from(string: &'a str) -> Self {
         assert!(string.bytes().len() < Capacity);
         unsafe { Self::from_ptr(string.as_bytes(), string.bytes().len()) }
@@ -444,349 +449,349 @@ pub type SmallString = FixedString<39>;
 
 #[repr(u32)]
 pub enum Format {
-    UNDEFINED = daxa_sys::VkFormat_VK_FORMAT_UNDEFINED,
-    R4G4_UNORM_PACK8 = daxa_sys::VkFormat_VK_FORMAT_R4G4_UNORM_PACK8,
-    R4G4B4A4_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-    B4G4R4A4_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-    R5G6B5_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_R5G6B5_UNORM_PACK16,
-    B5G6R5_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_B5G6R5_UNORM_PACK16,
-    R5G5B5A1_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-    B5G5R5A1_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-    A1R5G5B5_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-    R8_UNORM = daxa_sys::VkFormat_VK_FORMAT_R8_UNORM,
-    R8_SNORM = daxa_sys::VkFormat_VK_FORMAT_R8_SNORM,
-    R8_USCALED = daxa_sys::VkFormat_VK_FORMAT_R8_USCALED,
-    R8_SSCALED = daxa_sys::VkFormat_VK_FORMAT_R8_SSCALED,
-    R8_UINT = daxa_sys::VkFormat_VK_FORMAT_R8_UINT,
-    R8_SINT = daxa_sys::VkFormat_VK_FORMAT_R8_SINT,
-    R8_SRGB = daxa_sys::VkFormat_VK_FORMAT_R8_SRGB,
-    R8G8_UNORM = daxa_sys::VkFormat_VK_FORMAT_R8G8_UNORM,
-    R8G8_SNORM = daxa_sys::VkFormat_VK_FORMAT_R8G8_SNORM,
-    R8G8_USCALED = daxa_sys::VkFormat_VK_FORMAT_R8G8_USCALED,
-    R8G8_SSCALED = daxa_sys::VkFormat_VK_FORMAT_R8G8_SSCALED,
-    R8G8_UINT = daxa_sys::VkFormat_VK_FORMAT_R8G8_UINT,
-    R8G8_SINT = daxa_sys::VkFormat_VK_FORMAT_R8G8_SINT,
-    R8G8_SRGB = daxa_sys::VkFormat_VK_FORMAT_R8G8_SRGB,
-    R8G8B8_UNORM = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_UNORM,
-    R8G8B8_SNORM = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_SNORM,
-    R8G8B8_USCALED = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_USCALED,
-    R8G8B8_SSCALED = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_SSCALED,
-    R8G8B8_UINT = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_UINT,
-    R8G8B8_SINT = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_SINT,
-    R8G8B8_SRGB = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_SRGB,
-    B8G8R8_UNORM = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_UNORM,
-    B8G8R8_SNORM = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_SNORM,
-    B8G8R8_USCALED = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_USCALED,
-    B8G8R8_SSCALED = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_SSCALED,
-    B8G8R8_UINT = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_UINT,
-    B8G8R8_SINT = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_SINT,
-    B8G8R8_SRGB = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_SRGB,
-    R8G8B8A8_UNORM = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_UNORM,
-    R8G8B8A8_SNORM = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_SNORM,
-    R8G8B8A8_USCALED = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_USCALED,
-    R8G8B8A8_SSCALED = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_SSCALED,
-    R8G8B8A8_UINT = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_UINT,
-    R8G8B8A8_SINT = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_SINT,
-    R8G8B8A8_SRGB = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_SRGB,
-    B8G8R8A8_UNORM = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_UNORM,
-    B8G8R8A8_SNORM = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_SNORM,
-    B8G8R8A8_USCALED = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_USCALED,
-    B8G8R8A8_SSCALED = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_SSCALED,
-    B8G8R8A8_UINT = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_UINT,
-    B8G8R8A8_SINT = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_SINT,
-    B8G8R8A8_SRGB = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_SRGB,
-    A8B8G8R8_UNORM_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-    A8B8G8R8_SNORM_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-    A8B8G8R8_USCALED_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_USCALED_PACK32,
-    A8B8G8R8_SSCALED_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
-    A8B8G8R8_UINT_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_UINT_PACK32,
-    A8B8G8R8_SINT_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_SINT_PACK32,
-    A8B8G8R8_SRGB_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-    A2R10G10B10_UNORM_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-    A2R10G10B10_SNORM_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-    A2R10G10B10_USCALED_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-    A2R10G10B10_SSCALED_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-    A2R10G10B10_UINT_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_UINT_PACK32,
-    A2R10G10B10_SINT_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_SINT_PACK32,
-    A2B10G10R10_UNORM_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-    A2B10G10R10_SNORM_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-    A2B10G10R10_USCALED_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-    A2B10G10R10_SSCALED_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-    A2B10G10R10_UINT_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_UINT_PACK32,
-    A2B10G10R10_SINT_PACK32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_SINT_PACK32,
-    R16_UNORM = daxa_sys::VkFormat_VK_FORMAT_R16_UNORM,
-    R16_SNORM = daxa_sys::VkFormat_VK_FORMAT_R16_SNORM,
-    R16_USCALED = daxa_sys::VkFormat_VK_FORMAT_R16_USCALED,
-    R16_SSCALED = daxa_sys::VkFormat_VK_FORMAT_R16_SSCALED,
-    R16_UINT = daxa_sys::VkFormat_VK_FORMAT_R16_UINT,
-    R16_SINT = daxa_sys::VkFormat_VK_FORMAT_R16_SINT,
-    R16_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R16_SFLOAT,
-    R16G16_UNORM = daxa_sys::VkFormat_VK_FORMAT_R16G16_UNORM,
-    R16G16_SNORM = daxa_sys::VkFormat_VK_FORMAT_R16G16_SNORM,
-    R16G16_USCALED = daxa_sys::VkFormat_VK_FORMAT_R16G16_USCALED,
-    R16G16_SSCALED = daxa_sys::VkFormat_VK_FORMAT_R16G16_SSCALED,
-    R16G16_UINT = daxa_sys::VkFormat_VK_FORMAT_R16G16_UINT,
-    R16G16_SINT = daxa_sys::VkFormat_VK_FORMAT_R16G16_SINT,
-    R16G16_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R16G16_SFLOAT,
-    R16G16B16_UNORM = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_UNORM,
-    R16G16B16_SNORM = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_SNORM,
-    R16G16B16_USCALED = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_USCALED,
-    R16G16B16_SSCALED = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_SSCALED,
-    R16G16B16_UINT = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_UINT,
-    R16G16B16_SINT = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_SINT,
-    R16G16B16_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_SFLOAT,
-    R16G16B16A16_UNORM = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_UNORM,
-    R16G16B16A16_SNORM = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_SNORM,
-    R16G16B16A16_USCALED = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_USCALED,
-    R16G16B16A16_SSCALED = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_SSCALED,
-    R16G16B16A16_UINT = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_UINT,
-    R16G16B16A16_SINT = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_SINT,
-    R16G16B16A16_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_SFLOAT,
-    R32_UINT = daxa_sys::VkFormat_VK_FORMAT_R32_UINT,
-    R32_SINT = daxa_sys::VkFormat_VK_FORMAT_R32_SINT,
-    R32_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R32_SFLOAT,
-    R32G32_UINT = daxa_sys::VkFormat_VK_FORMAT_R32G32_UINT,
-    R32G32_SINT = daxa_sys::VkFormat_VK_FORMAT_R32G32_SINT,
-    R32G32_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R32G32_SFLOAT,
-    R32G32B32_UINT = daxa_sys::VkFormat_VK_FORMAT_R32G32B32_UINT,
-    R32G32B32_SINT = daxa_sys::VkFormat_VK_FORMAT_R32G32B32_SINT,
-    R32G32B32_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R32G32B32_SFLOAT,
-    R32G32B32A32_UINT = daxa_sys::VkFormat_VK_FORMAT_R32G32B32A32_UINT,
-    R32G32B32A32_SINT = daxa_sys::VkFormat_VK_FORMAT_R32G32B32A32_SINT,
-    R32G32B32A32_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT,
-    R64_UINT = daxa_sys::VkFormat_VK_FORMAT_R64_UINT,
-    R64_SINT = daxa_sys::VkFormat_VK_FORMAT_R64_SINT,
-    R64_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R64_SFLOAT,
-    R64G64_UINT = daxa_sys::VkFormat_VK_FORMAT_R64G64_UINT,
-    R64G64_SINT = daxa_sys::VkFormat_VK_FORMAT_R64G64_SINT,
-    R64G64_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R64G64_SFLOAT,
-    R64G64B64_UINT = daxa_sys::VkFormat_VK_FORMAT_R64G64B64_UINT,
-    R64G64B64_SINT = daxa_sys::VkFormat_VK_FORMAT_R64G64B64_SINT,
-    R64G64B64_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R64G64B64_SFLOAT,
-    R64G64B64A64_UINT = daxa_sys::VkFormat_VK_FORMAT_R64G64B64A64_UINT,
-    R64G64B64A64_SINT = daxa_sys::VkFormat_VK_FORMAT_R64G64B64A64_SINT,
-    R64G64B64A64_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_R64G64B64A64_SFLOAT,
-    B10G11R11_UFLOAT_PACK32 = daxa_sys::VkFormat_VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-    E5B9G9R9_UFLOAT_PACK32 = daxa_sys::VkFormat_VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-    D16_UNORM = daxa_sys::VkFormat_VK_FORMAT_D16_UNORM,
-    X8_D24_UNORM_PACK32 = daxa_sys::VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32,
-    D32_SFLOAT = daxa_sys::VkFormat_VK_FORMAT_D32_SFLOAT,
-    S8_UINT = daxa_sys::VkFormat_VK_FORMAT_S8_UINT,
-    D16_UNORM_S8_UINT = daxa_sys::VkFormat_VK_FORMAT_D16_UNORM_S8_UINT,
-    D24_UNORM_S8_UINT = daxa_sys::VkFormat_VK_FORMAT_D24_UNORM_S8_UINT,
-    D32_SFLOAT_S8_UINT = daxa_sys::VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT,
-    BC1_RGB_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC1_RGB_UNORM_BLOCK,
-    BC1_RGB_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC1_RGB_SRGB_BLOCK,
-    BC1_RGBA_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
-    BC1_RGBA_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
-    BC2_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC2_UNORM_BLOCK,
-    BC2_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC2_SRGB_BLOCK,
-    BC3_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC3_UNORM_BLOCK,
-    BC3_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC3_SRGB_BLOCK,
-    BC4_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC4_UNORM_BLOCK,
-    BC4_SNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC4_SNORM_BLOCK,
-    BC5_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC5_UNORM_BLOCK,
-    BC5_SNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC5_SNORM_BLOCK,
-    BC6H_UFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC6H_UFLOAT_BLOCK,
-    BC6H_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC6H_SFLOAT_BLOCK,
-    BC7_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC7_UNORM_BLOCK,
-    BC7_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_BC7_SRGB_BLOCK,
-    ETC2_R8G8B8_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
-    ETC2_R8G8B8_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
-    ETC2_R8G8B8A1_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
-    ETC2_R8G8B8A1_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
-    ETC2_R8G8B8A8_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
-    ETC2_R8G8B8A8_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
-    EAC_R11_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_EAC_R11_UNORM_BLOCK,
-    EAC_R11_SNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_EAC_R11_SNORM_BLOCK,
-    EAC_R11G11_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
-    EAC_R11G11_SNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
-    ASTC_4x4_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
-    ASTC_4x4_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
-    ASTC_5x4_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
-    ASTC_5x4_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
-    ASTC_5x5_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
-    ASTC_5x5_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
-    ASTC_6x5_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
-    ASTC_6x5_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
-    ASTC_6x6_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
-    ASTC_6x6_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
-    ASTC_8x5_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
-    ASTC_8x5_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
-    ASTC_8x6_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
-    ASTC_8x6_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
-    ASTC_8x8_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
-    ASTC_8x8_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
-    ASTC_10x5_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
-    ASTC_10x5_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
-    ASTC_10x6_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
-    ASTC_10x6_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
-    ASTC_10x8_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
-    ASTC_10x8_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
-    ASTC_10x10_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
-    ASTC_10x10_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
-    ASTC_12x10_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
-    ASTC_12x10_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
-    ASTC_12x12_UNORM_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
-    ASTC_12x12_SRGB_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
-    G8B8G8R8_422_UNORM = daxa_sys::VkFormat_VK_FORMAT_G8B8G8R8_422_UNORM,
-    B8G8R8G8_422_UNORM = daxa_sys::VkFormat_VK_FORMAT_B8G8R8G8_422_UNORM,
-    G8_B8_R8_3PLANE_420_UNORM = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
-    G8_B8R8_2PLANE_420_UNORM = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
-    G8_B8_R8_3PLANE_422_UNORM = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
-    G8_B8R8_2PLANE_422_UNORM = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
-    G8_B8_R8_3PLANE_444_UNORM = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
-    R10X6_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_R10X6_UNORM_PACK16,
-    R10X6G10X6_UNORM_2PACK16 = daxa_sys::VkFormat_VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
-    R10X6G10X6B10X6A10X6_UNORM_4PACK16 =
+    Undefined = daxa_sys::VkFormat_VK_FORMAT_UNDEFINED,
+    R4g4UnormPack8 = daxa_sys::VkFormat_VK_FORMAT_R4G4_UNORM_PACK8,
+    R4g4b4a4UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+    B4g4r4a4UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+    R5g6b5UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_R5G6B5_UNORM_PACK16,
+    B5g6r5UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_B5G6R5_UNORM_PACK16,
+    R5g5b5a1UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+    B5g5r5a1UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_B5G5R5A1_UNORM_PACK16,
+    A1r5g5b5UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+    R8Unorm = daxa_sys::VkFormat_VK_FORMAT_R8_UNORM,
+    R8Snorm = daxa_sys::VkFormat_VK_FORMAT_R8_SNORM,
+    R8Uscaled = daxa_sys::VkFormat_VK_FORMAT_R8_USCALED,
+    R8Sscaled = daxa_sys::VkFormat_VK_FORMAT_R8_SSCALED,
+    R8Uint = daxa_sys::VkFormat_VK_FORMAT_R8_UINT,
+    R8Sint = daxa_sys::VkFormat_VK_FORMAT_R8_SINT,
+    R8Srgb = daxa_sys::VkFormat_VK_FORMAT_R8_SRGB,
+    R8g8Unorm = daxa_sys::VkFormat_VK_FORMAT_R8G8_UNORM,
+    R8g8Snorm = daxa_sys::VkFormat_VK_FORMAT_R8G8_SNORM,
+    R8g8Uscaled = daxa_sys::VkFormat_VK_FORMAT_R8G8_USCALED,
+    R8g8Sscaled = daxa_sys::VkFormat_VK_FORMAT_R8G8_SSCALED,
+    R8g8Uint = daxa_sys::VkFormat_VK_FORMAT_R8G8_UINT,
+    R8g8Sint = daxa_sys::VkFormat_VK_FORMAT_R8G8_SINT,
+    R8g8Srgb = daxa_sys::VkFormat_VK_FORMAT_R8G8_SRGB,
+    R8g8b8Unorm = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_UNORM,
+    R8g8b8Snorm = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_SNORM,
+    R8g8b8Uscaled = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_USCALED,
+    R8g8b8Sscaled = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_SSCALED,
+    R8g8b8Uint = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_UINT,
+    R8g8b8Sint = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_SINT,
+    R8g8b8Srgb = daxa_sys::VkFormat_VK_FORMAT_R8G8B8_SRGB,
+    B8g8r8Unorm = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_UNORM,
+    B8g8r8Snorm = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_SNORM,
+    B8g8r8Uscaled = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_USCALED,
+    B8g8r8Sscaled = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_SSCALED,
+    B8g8r8Uint = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_UINT,
+    B8g8r8Sint = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_SINT,
+    B8g8r8Srgb = daxa_sys::VkFormat_VK_FORMAT_B8G8R8_SRGB,
+    R8g8b8a8Unorm = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_UNORM,
+    R8g8b8a8Snorm = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_SNORM,
+    R8g8b8a8Uscaled = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_USCALED,
+    R8g8b8a8Sscaled = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_SSCALED,
+    R8g8b8a8Uint = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_UINT,
+    R8g8b8a8Sint = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_SINT,
+    R8g8b8a8Srgb = daxa_sys::VkFormat_VK_FORMAT_R8G8B8A8_SRGB,
+    B8g8r8a8Unorm = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_UNORM,
+    B8g8r8a8Snorm = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_SNORM,
+    B8g8r8a8Uscaled = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_USCALED,
+    B8g8r8a8Sscaled = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_SSCALED,
+    B8g8r8a8Uint = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_UINT,
+    B8g8r8a8Sint = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_SINT,
+    B8g8r8a8Srgb = daxa_sys::VkFormat_VK_FORMAT_B8G8R8A8_SRGB,
+    A8b8g8r8UnormPack32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+    A8b8g8r8SnormPack32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+    A8b8g8r8UscaledPack32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_USCALED_PACK32,
+    A8b8g8r8SscaledPack32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
+    A8b8g8r8UintPack32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_UINT_PACK32,
+    A8b8g8r8SintPack32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_SINT_PACK32,
+    A8b8g8r8SrgbPack32 = daxa_sys::VkFormat_VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+    A2r10g10b10UnormPack32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+    A2r10g10b10SnormPack32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_SNORM_PACK32,
+    A2r10g10b10UscaledPack32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_USCALED_PACK32,
+    A2r10g10b10SscaledPack32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
+    A2r10g10b10UintPack32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_UINT_PACK32,
+    A2r10g10b10SintPack32 = daxa_sys::VkFormat_VK_FORMAT_A2R10G10B10_SINT_PACK32,
+    A2b10g10r10UnormPack32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+    A2b10g10r10SnormPack32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+    A2b10g10r10UscaledPack32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_USCALED_PACK32,
+    A2b10g10r10SscaledPack32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
+    A2b10g10r10UintPack32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_UINT_PACK32,
+    A2b10g10r10SintPack32 = daxa_sys::VkFormat_VK_FORMAT_A2B10G10R10_SINT_PACK32,
+    R16Unorm = daxa_sys::VkFormat_VK_FORMAT_R16_UNORM,
+    R16Snorm = daxa_sys::VkFormat_VK_FORMAT_R16_SNORM,
+    R16Uscaled = daxa_sys::VkFormat_VK_FORMAT_R16_USCALED,
+    R16Sscaled = daxa_sys::VkFormat_VK_FORMAT_R16_SSCALED,
+    R16Uint = daxa_sys::VkFormat_VK_FORMAT_R16_UINT,
+    R16Sint = daxa_sys::VkFormat_VK_FORMAT_R16_SINT,
+    R16Sfloat = daxa_sys::VkFormat_VK_FORMAT_R16_SFLOAT,
+    R16g16Unorm = daxa_sys::VkFormat_VK_FORMAT_R16G16_UNORM,
+    R16g16Snorm = daxa_sys::VkFormat_VK_FORMAT_R16G16_SNORM,
+    R16g16Uscaled = daxa_sys::VkFormat_VK_FORMAT_R16G16_USCALED,
+    R16g16Sscaled = daxa_sys::VkFormat_VK_FORMAT_R16G16_SSCALED,
+    R16g16Uint = daxa_sys::VkFormat_VK_FORMAT_R16G16_UINT,
+    R16g16Sint = daxa_sys::VkFormat_VK_FORMAT_R16G16_SINT,
+    R16g16Sfloat = daxa_sys::VkFormat_VK_FORMAT_R16G16_SFLOAT,
+    R16g16b16Unorm = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_UNORM,
+    R16g16b16Snorm = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_SNORM,
+    R16g16b16Uscaled = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_USCALED,
+    R16g16b16Sscaled = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_SSCALED,
+    R16g16b16Uint = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_UINT,
+    R16g16b16Sint = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_SINT,
+    R16g16b16Sfloat = daxa_sys::VkFormat_VK_FORMAT_R16G16B16_SFLOAT,
+    R16g16b16a16Unorm = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_UNORM,
+    R16g16b16a16Snorm = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_SNORM,
+    R16g16b16a16Uscaled = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_USCALED,
+    R16g16b16a16Sscaled = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_SSCALED,
+    R16g16b16a16Uint = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_UINT,
+    R16g16b16a16Sint = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_SINT,
+    R16g16b16a16Sfloat = daxa_sys::VkFormat_VK_FORMAT_R16G16B16A16_SFLOAT,
+    R32Uint = daxa_sys::VkFormat_VK_FORMAT_R32_UINT,
+    R32Sint = daxa_sys::VkFormat_VK_FORMAT_R32_SINT,
+    R32Sfloat = daxa_sys::VkFormat_VK_FORMAT_R32_SFLOAT,
+    R32g32Uint = daxa_sys::VkFormat_VK_FORMAT_R32G32_UINT,
+    R32g32Sint = daxa_sys::VkFormat_VK_FORMAT_R32G32_SINT,
+    R32g32Sfloat = daxa_sys::VkFormat_VK_FORMAT_R32G32_SFLOAT,
+    R32g32b32Uint = daxa_sys::VkFormat_VK_FORMAT_R32G32B32_UINT,
+    R32g32b32Sint = daxa_sys::VkFormat_VK_FORMAT_R32G32B32_SINT,
+    R32g32b32Sfloat = daxa_sys::VkFormat_VK_FORMAT_R32G32B32_SFLOAT,
+    R32g32b32a32Uint = daxa_sys::VkFormat_VK_FORMAT_R32G32B32A32_UINT,
+    R32g32b32a32Sint = daxa_sys::VkFormat_VK_FORMAT_R32G32B32A32_SINT,
+    R32g32b32a32Sfloat = daxa_sys::VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT,
+    R64Uint = daxa_sys::VkFormat_VK_FORMAT_R64_UINT,
+    R64Sint = daxa_sys::VkFormat_VK_FORMAT_R64_SINT,
+    R64Sfloat = daxa_sys::VkFormat_VK_FORMAT_R64_SFLOAT,
+    R64g64Uint = daxa_sys::VkFormat_VK_FORMAT_R64G64_UINT,
+    R64g64Sint = daxa_sys::VkFormat_VK_FORMAT_R64G64_SINT,
+    R64g64Sfloat = daxa_sys::VkFormat_VK_FORMAT_R64G64_SFLOAT,
+    R64g64b64Uint = daxa_sys::VkFormat_VK_FORMAT_R64G64B64_UINT,
+    R64g64b64Sint = daxa_sys::VkFormat_VK_FORMAT_R64G64B64_SINT,
+    R64g64b64Sfloat = daxa_sys::VkFormat_VK_FORMAT_R64G64B64_SFLOAT,
+    R64g64b64a64Uint = daxa_sys::VkFormat_VK_FORMAT_R64G64B64A64_UINT,
+    R64g64b64a64Sint = daxa_sys::VkFormat_VK_FORMAT_R64G64B64A64_SINT,
+    R64g64b64a64Sfloat = daxa_sys::VkFormat_VK_FORMAT_R64G64B64A64_SFLOAT,
+    B10g11r11UfloatPack32 = daxa_sys::VkFormat_VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+    E5b9g9r9UfloatPack32 = daxa_sys::VkFormat_VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+    D16Unorm = daxa_sys::VkFormat_VK_FORMAT_D16_UNORM,
+    X8D24UnormPack32 = daxa_sys::VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32,
+    D32Sfloat = daxa_sys::VkFormat_VK_FORMAT_D32_SFLOAT,
+    S8Uint = daxa_sys::VkFormat_VK_FORMAT_S8_UINT,
+    D16UnormS8Uint = daxa_sys::VkFormat_VK_FORMAT_D16_UNORM_S8_UINT,
+    D24UnormS8Uint = daxa_sys::VkFormat_VK_FORMAT_D24_UNORM_S8_UINT,
+    D32SfloatS8Uint = daxa_sys::VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT,
+    Bc1RgbUnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC1_RGB_UNORM_BLOCK,
+    Bc1RgbSrgbBlock = daxa_sys::VkFormat_VK_FORMAT_BC1_RGB_SRGB_BLOCK,
+    Bc1RgbaUnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
+    Bc1RgbaSrgbBlock = daxa_sys::VkFormat_VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
+    Bc2UnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC2_UNORM_BLOCK,
+    Bc2SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_BC2_SRGB_BLOCK,
+    Bc3UnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC3_UNORM_BLOCK,
+    Bc3SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_BC3_SRGB_BLOCK,
+    Bc4UnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC4_UNORM_BLOCK,
+    Bc4SnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC4_SNORM_BLOCK,
+    Bc5UnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC5_UNORM_BLOCK,
+    Bc5SnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC5_SNORM_BLOCK,
+    Bc6hUfloatBlock = daxa_sys::VkFormat_VK_FORMAT_BC6H_UFLOAT_BLOCK,
+    Bc6hSfloatBlock = daxa_sys::VkFormat_VK_FORMAT_BC6H_SFLOAT_BLOCK,
+    Bc7UnormBlock = daxa_sys::VkFormat_VK_FORMAT_BC7_UNORM_BLOCK,
+    Bc7SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_BC7_SRGB_BLOCK,
+    Etc2R8g8b8UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+    Etc2R8g8b8SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+    Etc2R8g8b8a1UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+    Etc2R8g8b8a1SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+    Etc2R8g8b8a8UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+    Etc2R8g8b8a8SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+    EacR11UnormBlock = daxa_sys::VkFormat_VK_FORMAT_EAC_R11_UNORM_BLOCK,
+    EacR11SnormBlock = daxa_sys::VkFormat_VK_FORMAT_EAC_R11_SNORM_BLOCK,
+    EacR11g11UnormBlock = daxa_sys::VkFormat_VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+    EacR11g11SnormBlock = daxa_sys::VkFormat_VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+    Astc4x4UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
+    Astc4x4SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
+    Astc5x4UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
+    Astc5x4SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
+    Astc5x5UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
+    Astc5x5SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
+    Astc6x5UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
+    Astc6x5SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
+    Astc6x6UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
+    Astc6x6SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+    Astc8x5UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
+    Astc8x5SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
+    Astc8x6UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
+    Astc8x6SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
+    Astc8x8UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
+    Astc8x8SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+    Astc10x5UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
+    Astc10x5SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
+    Astc10x6UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
+    Astc10x6SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
+    Astc10x8UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
+    Astc10x8SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
+    Astc10x10UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
+    Astc10x10SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
+    Astc12x10UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
+    Astc12x10SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
+    Astc12x12UnormBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
+    Astc12x12SrgbBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+    G8b8g8r8422Unorm = daxa_sys::VkFormat_VK_FORMAT_G8B8G8R8_422_UNORM,
+    B8g8r8g8422Unorm = daxa_sys::VkFormat_VK_FORMAT_B8G8R8G8_422_UNORM,
+    G8B8R83plane420Unorm = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
+    G8B8r82plane420Unorm = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
+    G8B8R83plane422Unorm = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
+    G8B8r82plane422Unorm = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
+    G8B8R83plane444Unorm = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
+    R10x6UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_R10X6_UNORM_PACK16,
+    R10x6g10x6Unorm2pack16 = daxa_sys::VkFormat_VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
+    R10x6g10x6b10x6a10x6Unorm4pack16 =
         daxa_sys::VkFormat_VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-    G10X6B10X6G10X6R10X6_422_UNORM_4PACK16 =
+    G10x6b10x6g10x6r10x6422Unorm4pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,
-    B10X6G10X6R10X6G10X6_422_UNORM_4PACK16 =
+    B10x6g10x6r10x6g10x6422Unorm4pack16 =
         daxa_sys::VkFormat_VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,
-    G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16 =
+    G10x6B10x6R10x63plane420Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
-    G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 =
+    G10x6B10x6r10x62plane420Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
-    G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16 =
+    G10x6B10x6R10x63plane422Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16,
-    G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16 =
+    G10x6B10x6r10x62plane422Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
-    G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16 =
+    G10x6B10x6R10x63plane444Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16,
-    R12X4_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_R12X4_UNORM_PACK16,
-    R12X4G12X4_UNORM_2PACK16 = daxa_sys::VkFormat_VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
-    R12X4G12X4B12X4A12X4_UNORM_4PACK16 =
+    R12x4UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_R12X4_UNORM_PACK16,
+    R12x4g12x4Unorm2pack16 = daxa_sys::VkFormat_VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
+    R12x4g12x4b12x4a12x4Unorm4pack16 =
         daxa_sys::VkFormat_VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16,
-    G12X4B12X4G12X4R12X4_422_UNORM_4PACK16 =
+    G12x4b12x4g12x4r12x4422Unorm4pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,
-    B12X4G12X4R12X4G12X4_422_UNORM_4PACK16 =
+    B12x4g12x4r12x4g12x4422Unorm4pack16 =
         daxa_sys::VkFormat_VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,
-    G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16 =
+    G12x4B12x4R12x43plane420Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
-    G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16 =
+    G12x4B12x4r12x42plane420Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
-    G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16 =
+    G12x4B12x4R12x43plane422Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16,
-    G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16 =
+    G12x4B12x4r12x42plane422Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16,
-    G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16 =
+    G12x4B12x4R12x43plane444Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16,
-    G16B16G16R16_422_UNORM = daxa_sys::VkFormat_VK_FORMAT_G16B16G16R16_422_UNORM,
-    B16G16R16G16_422_UNORM = daxa_sys::VkFormat_VK_FORMAT_B16G16R16G16_422_UNORM,
-    G16_B16_R16_3PLANE_420_UNORM = daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
-    G16_B16R16_2PLANE_420_UNORM = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
-    G16_B16_R16_3PLANE_422_UNORM = daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
-    G16_B16R16_2PLANE_422_UNORM = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
-    G16_B16_R16_3PLANE_444_UNORM = daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
-    G8_B8R8_2PLANE_444_UNORM = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_444_UNORM,
-    G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16 =
+    G16b16g16r16422Unorm = daxa_sys::VkFormat_VK_FORMAT_G16B16G16R16_422_UNORM,
+    B16g16r16g16422Unorm = daxa_sys::VkFormat_VK_FORMAT_B16G16R16G16_422_UNORM,
+    G16B16R163plane420Unorm = daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
+    G16B16r162plane420Unorm = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
+    G16B16R163plane422Unorm = daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
+    G16B16r162plane422Unorm = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
+    G16B16R163plane444Unorm = daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
+    G8B8r82plane444Unorm = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_444_UNORM,
+    G10x6B10x6r10x62plane444Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16,
-    G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16 =
+    G12x4B12x4r12x42plane444Unorm3pack16 =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16,
-    G16_B16R16_2PLANE_444_UNORM = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_444_UNORM,
-    A4R4G4B4_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_A4R4G4B4_UNORM_PACK16,
-    A4B4G4R4_UNORM_PACK16 = daxa_sys::VkFormat_VK_FORMAT_A4B4G4R4_UNORM_PACK16,
-    ASTC_4x4_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK,
-    ASTC_5x4_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK,
-    ASTC_5x5_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK,
-    ASTC_6x5_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK,
-    ASTC_6x6_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK,
-    ASTC_8x5_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK,
-    ASTC_8x6_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK,
-    ASTC_8x8_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK,
-    ASTC_10x5_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK,
-    ASTC_10x6_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK,
-    ASTC_10x8_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK,
-    ASTC_10x10_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK,
-    ASTC_12x10_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK,
-    ASTC_12x12_SFLOAT_BLOCK = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK,
-    PVRTC1_2BPP_UNORM_BLOCK_IMG = daxa_sys::VkFormat_VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG,
-    PVRTC1_4BPP_UNORM_BLOCK_IMG = daxa_sys::VkFormat_VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG,
-    PVRTC2_2BPP_UNORM_BLOCK_IMG = daxa_sys::VkFormat_VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG,
-    PVRTC2_4BPP_UNORM_BLOCK_IMG = daxa_sys::VkFormat_VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG,
-    PVRTC1_2BPP_SRGB_BLOCK_IMG = daxa_sys::VkFormat_VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG,
-    PVRTC1_4BPP_SRGB_BLOCK_IMG = daxa_sys::VkFormat_VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG,
-    PVRTC2_2BPP_SRGB_BLOCK_IMG = daxa_sys::VkFormat_VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG,
-    PVRTC2_4BPP_SRGB_BLOCK_IMG = daxa_sys::VkFormat_VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG,
-    R16G16_S10_5_NV = daxa_sys::VkFormat_VK_FORMAT_R16G16_S10_5_NV,
-    A1B5G5R5_UNORM_PACK16_KHR = daxa_sys::VkFormat_VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
-    A8_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_A8_UNORM_KHR,
-    ASTC_4x4_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT,
-    ASTC_5x4_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK_EXT,
-    ASTC_5x5_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK_EXT,
-    ASTC_6x5_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK_EXT,
-    ASTC_6x6_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK_EXT,
-    ASTC_8x5_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK_EXT,
-    ASTC_8x6_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK_EXT,
-    ASTC_8x8_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK_EXT,
-    ASTC_10x5_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK_EXT,
-    ASTC_10x6_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK_EXT,
-    ASTC_10x8_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK_EXT,
-    ASTC_10x10_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT,
-    ASTC_12x10_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT,
-    ASTC_12x12_SFLOAT_BLOCK_EXT = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT,
-    G8B8G8R8_422_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G8B8G8R8_422_UNORM_KHR,
-    B8G8R8G8_422_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_B8G8R8G8_422_UNORM_KHR,
-    G8_B8_R8_3PLANE_420_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR,
-    G8_B8R8_2PLANE_420_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR,
-    G8_B8_R8_3PLANE_422_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR,
-    G8_B8R8_2PLANE_422_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR,
-    G8_B8_R8_3PLANE_444_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR,
-    R10X6_UNORM_PACK16_KHR = daxa_sys::VkFormat_VK_FORMAT_R10X6_UNORM_PACK16_KHR,
-    R10X6G10X6_UNORM_2PACK16_KHR = daxa_sys::VkFormat_VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR,
-    R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR =
+    G16B16r162plane444Unorm = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_444_UNORM,
+    A4r4g4b4UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_A4R4G4B4_UNORM_PACK16,
+    A4b4g4r4UnormPack16 = daxa_sys::VkFormat_VK_FORMAT_A4B4G4R4_UNORM_PACK16,
+    Astc4x4SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK,
+    Astc5x4SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK,
+    Astc5x5SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK,
+    Astc6x5SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK,
+    Astc6x6SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK,
+    Astc8x5SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK,
+    Astc8x6SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK,
+    Astc8x8SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK,
+    Astc10x5SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK,
+    Astc10x6SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK,
+    Astc10x8SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK,
+    Astc10x10SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK,
+    Astc12x10SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK,
+    Astc12x12SfloatBlock = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK,
+    Pvrtc12bppUnormBlockImg = daxa_sys::VkFormat_VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG,
+    Pvrtc14bppUnormBlockImg = daxa_sys::VkFormat_VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG,
+    Pvrtc22bppUnormBlockImg = daxa_sys::VkFormat_VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG,
+    Pvrtc24bppUnormBlockImg = daxa_sys::VkFormat_VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG,
+    Pvrtc12bppSrgbBlockImg = daxa_sys::VkFormat_VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG,
+    Pvrtc14bppSrgbBlockImg = daxa_sys::VkFormat_VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG,
+    Pvrtc22bppSrgbBlockImg = daxa_sys::VkFormat_VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG,
+    Pvrtc24bppSrgbBlockImg = daxa_sys::VkFormat_VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG,
+    R16g16S105Nv = daxa_sys::VkFormat_VK_FORMAT_R16G16_S10_5_NV,
+    A1b5g5r5UnormPack16Khr = daxa_sys::VkFormat_VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+    A8UnormKhr = daxa_sys::VkFormat_VK_FORMAT_A8_UNORM_KHR,
+    Astc4x4SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT,
+    Astc5x4SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK_EXT,
+    Astc5x5SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK_EXT,
+    Astc6x5SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK_EXT,
+    Astc6x6SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK_EXT,
+    Astc8x5SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK_EXT,
+    Astc8x6SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK_EXT,
+    Astc8x8SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK_EXT,
+    Astc10x5SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK_EXT,
+    Astc10x6SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK_EXT,
+    Astc10x8SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK_EXT,
+    Astc10x10SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT,
+    Astc12x10SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT,
+    Astc12x12SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT,
+    G8b8g8r8422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8B8G8R8_422_UNORM_KHR,
+    B8g8r8g8422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_B8G8R8G8_422_UNORM_KHR,
+    G8B8R83plane420UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR,
+    G8B8r82plane420UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR,
+    G8B8R83plane422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR,
+    G8B8r82plane422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR,
+    G8B8R83plane444UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR,
+    R10x6UnormPack16Khr = daxa_sys::VkFormat_VK_FORMAT_R10X6_UNORM_PACK16_KHR,
+    R10x6g10x6Unorm2pack16Khr = daxa_sys::VkFormat_VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR,
+    R10x6g10x6b10x6a10x6Unorm4pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR,
-    G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR =
+    G10x6b10x6g10x6r10x6422Unorm4pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR,
-    B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR =
+    B10x6g10x6r10x6g10x6422Unorm4pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR,
-    G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR =
+    G10x6B10x6R10x63plane420Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR,
-    G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR =
+    G10x6B10x6r10x62plane420Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR,
-    G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR =
+    G10x6B10x6R10x63plane422Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR,
-    G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR =
+    G10x6B10x6r10x62plane422Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR,
-    G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR =
+    G10x6B10x6R10x63plane444Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR,
-    R12X4_UNORM_PACK16_KHR = daxa_sys::VkFormat_VK_FORMAT_R12X4_UNORM_PACK16_KHR,
-    R12X4G12X4_UNORM_2PACK16_KHR = daxa_sys::VkFormat_VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR,
-    R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR =
+    R12x4UnormPack16Khr = daxa_sys::VkFormat_VK_FORMAT_R12X4_UNORM_PACK16_KHR,
+    R12x4g12x4Unorm2pack16Khr = daxa_sys::VkFormat_VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR,
+    R12x4g12x4b12x4a12x4Unorm4pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR,
-    G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR =
+    G12x4b12x4g12x4r12x4422Unorm4pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR,
-    B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR =
+    B12x4g12x4r12x4g12x4422Unorm4pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR,
-    G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR =
+    G12x4B12x4R12x43plane420Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR,
-    G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR =
+    G12x4B12x4r12x42plane420Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR,
-    G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR =
+    G12x4B12x4R12x43plane422Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR,
-    G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR =
+    G12x4B12x4r12x42plane422Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR,
-    G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR =
+    G12x4B12x4R12x43plane444Unorm3pack16Khr =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR,
-    G16B16G16R16_422_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G16B16G16R16_422_UNORM_KHR,
-    B16G16R16G16_422_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_B16G16R16G16_422_UNORM_KHR,
-    G16_B16_R16_3PLANE_420_UNORM_KHR =
+    G16b16g16r16422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G16B16G16R16_422_UNORM_KHR,
+    B16g16r16g16422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_B16G16R16G16_422_UNORM_KHR,
+    G16B16R163plane420UnormKhr =
         daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR,
-    G16_B16R16_2PLANE_420_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR,
-    G16_B16_R16_3PLANE_422_UNORM_KHR =
+    G16B16r162plane420UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR,
+    G16B16R163plane422UnormKhr =
         daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR,
-    G16_B16R16_2PLANE_422_UNORM_KHR = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR,
-    G16_B16_R16_3PLANE_444_UNORM_KHR =
+    G16B16r162plane422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR,
+    G16B16R163plane444UnormKhr =
         daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR,
-    G8_B8R8_2PLANE_444_UNORM_EXT = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
-    G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT =
+    G8B8r82plane444UnormExt = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
+    G10x6B10x6r10x62plane444Unorm3pack16Ext =
         daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
-    G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT =
+    G12x4B12x4r12x42plane444Unorm3pack16Ext =
         daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
-    G16_B16R16_2PLANE_444_UNORM_EXT = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
-    A4R4G4B4_UNORM_PACK16_EXT = daxa_sys::VkFormat_VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
-    A4B4G4R4_UNORM_PACK16_EXT = daxa_sys::VkFormat_VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+    G16B16r162plane444UnormExt = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
+    A4r4g4b4UnormPack16Ext = daxa_sys::VkFormat_VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+    A4b4g4r4UnormPack16Ext = daxa_sys::VkFormat_VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 }
 
 pub const VK_UUID_SIZE: usize = 16;
