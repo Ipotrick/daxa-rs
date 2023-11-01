@@ -2,13 +2,11 @@ use bitflags::bitflags;
 
 use crate::{types, CompareOp, Format};
 
-pub type RasterPipeline = daxa_sys::daxa_RasterPipeline;
-
 #[repr(C)]
-pub struct ShaderInfo<'a> {
+pub struct ShaderInfo {
     byte_code: *const u32,
     byte_code_size: usize,
-    entry_point: types::StringView<'a>,
+    entry_point: types::SmallString,
 }
 
 #[repr(C)]
@@ -23,7 +21,7 @@ pub struct DepthTestInfo {
 impl Default for DepthTestInfo {
     fn default() -> Self {
         Self {
-            depth_attachment_format: Format::UNDEFINED,
+            depth_attachment_format: Format::Undefined,
             enable_depth_write: false,
             depth_test_compare_op: CompareOp::LessOrEqual,
             min_depth_bounds: 0.0,
@@ -158,10 +156,6 @@ impl Default for BlendInfo {
 pub enum TesselationDomainOrigin {
     UpperLeft = daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
     LowerLeft = daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT,
-    UpperLeftKhr =
-        daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR,
-    LowerLeftKhr =
-        daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR,
 }
 
 #[repr(C)]
@@ -214,13 +208,16 @@ pub enum FrontFace {
 }
 
 #[repr(u32)]
+#[derive(Default)]
 pub enum ConsevativeRasterizationModeEXT {
+    #[default]
     DisabledExt = daxa_sys::VkConservativeRasterizationModeEXT_VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT,
     OverestimateExt = daxa_sys::VkConservativeRasterizationModeEXT_VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT,
     UnderestimateExt = daxa_sys::VkConservativeRasterizationModeEXT_VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,
 }
 
 #[repr(C)]
+#[derive(Default)]
 pub struct ConsevativeRasterInfo {
     mode: ConsevativeRasterizationModeEXT,
     size: f32,
@@ -249,7 +246,7 @@ impl Default for RasterizerInfo {
             primitive_topology: PrimitiveTopology::TriangleList,
             primitive_restart_enable: false,
             polygon_mode: PolygonMode::Fill,
-            face_culling: CullModeFlags::None,
+            face_culling: CullModeFlags::NONE,
             front_face_winding: FrontFace::Clockwise,
             depth_clamp_enable: false,
             rasterizer_discard_enable: false,
@@ -264,17 +261,24 @@ impl Default for RasterizerInfo {
 }
 
 #[repr(C)]
-pub struct RasterPipelineInfo<'a> {
-    mesh_shader_info: types::Option<ShaderInfo<'a>>,
-    vertex_shader_info: types::Option<ShaderInfo<'a>>,
-    tesselation_control_shader_info: types::Option<ShaderInfo<'a>>,
-    tesselation_evaluation_shader_info: types::Option<ShaderInfo<'a>>,
-    fragment_shader_info: types::Option<ShaderInfo<'a>>,
-    task_shader_info: types::Option<ShaderInfo<'a>>,
+pub struct RasterPipelineInfo {
+    mesh_shader_info: types::Option<ShaderInfo>,
+    vertex_shader_info: types::Option<ShaderInfo>,
+    tesselation_control_shader_info: types::Option<ShaderInfo>,
+    tesselation_evaluation_shader_info: types::Option<ShaderInfo>,
+    fragment_shader_info: types::Option<ShaderInfo>,
+    task_shader_info: types::Option<ShaderInfo>,
     color_attachments: [RenderAttachment; 8],
     depth_test: types::Option<DepthTestInfo>,
     tesselation: types::Option<TesselationInfo>,
     raster: RasterizerInfo,
     push_constant_size: u32,
-    name: types::StringView<'a>,
+    name: types::SmallString,
+}
+
+#[repr(C)]
+pub struct ComputePipelineInfo {
+    shader_info: types::Option<ShaderInfo>,
+    push_constant_size: u32,
+    name: types::SmallString,
 }

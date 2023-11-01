@@ -2,6 +2,7 @@ mod device;
 mod instance;
 mod pipeline;
 mod types;
+mod swapchain;
 pub use instance::*;
 pub use types::*;
 

@@ -69,7 +69,7 @@ pub struct ImageSlice {
 
 bitflags! {
     #[derive(Default)]
-    pub struct PipelineStageFlags: i32 {
+    pub struct PipelineStageFlags: u64 {
         const TOP_OF_PIPE_BIT = daxa_sys::VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
         const DRAW_INDIRECT_BIT = daxa_sys::VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
         const VERTEX_INPUT_BIT = daxa_sys::VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
@@ -107,7 +107,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct ImageViewType: i32 {
+    pub struct ImageViewType: u32 {
         const ONE_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_1D;
         const TWO_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_2D;
         const THREE_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_3D;
@@ -119,7 +119,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct Filter: i32 {
+    pub struct Filter: u32 {
         const NEAREST = daxa_sys::VkFilter_VK_FILTER_NEAREST;
         const LINEAR = daxa_sys::VkFilter_VK_FILTER_LINEAR;
         const CUBIC_EXT = daxa_sys::VkFilter_VK_FILTER_CUBIC_EXT;
@@ -128,7 +128,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct ImageCreateFlags: i32 {
+    pub struct ImageCreateFlags: u32 {
         const SPARSE_BINDING = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
         const SPARSE_RESIDENCY = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
         const SPARSE_ALIASED = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
@@ -151,7 +151,7 @@ bitflags! {
     }
 }
 bitflags! {
-    pub struct ImageUsageFlags: i32 {
+    pub struct ImageUsageFlags: u32 {
         const TRANSFER_SRC = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         const TRANSFER_DST = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         const SAMPLED = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -218,12 +218,19 @@ pub struct PresentInfo<'a> {
     pub swapchain: Swapchain,
 }
 
-pub type BufferId = daxa_sys::daxa_BufferId;
-pub type ImageId = daxa_sys::daxa_ImageId;
-pub type ImageViewId = daxa_sys::daxa_ImageViewId;
-pub type SamplerId = daxa_sys::daxa_SamplerId;
+macro_rules! id {
+    ($name:ident) => {
+        paste::item! {
+            pub type [< $name Id >] = daxa_sys:: [< daxa_ $name Id >];
+        }
+    };
+}
+id!(Image);
+id!(ImageView);
+id!(Sampler);
+id!(Buffer);
 
-pub type BufferDeviceAddress = u64;
+pub type BufferDeviceAddress = daxa_sys::daxa_BufferDeviceAddress;
 
 #[repr(C)]
 pub struct BufferInfo {
@@ -274,44 +281,47 @@ pub struct SamplerInfo {
     pub name: SmallString,
 }
 
-#[derive(Clone)]
-#[repr(C)]
-pub struct Buffer(pub(crate) BufferId);
-impl Buffer {
-    pub fn id(&self) -> BufferId {
-        self.0
-    }
+macro_rules! handle {
+    ($name:ident) => {
+        paste::item! {
+            #[repr(C)]
+            pub struct $name(pub(crate) daxa_sys:: [< daxa_ $name >]);
+
+            impl $name {
+                //TODO do we need this?
+                pub fn id(&self) -> daxa_sys:: [< daxa_ $name >] {
+                    self.0
+                }
+            }
+        }
+    };
+    ($name:ident, $postfix:ident) => {
+        paste::item! {
+            #[repr(C)]
+            pub struct $name(pub(crate) [< $name $postfix >]);
+
+            impl $name {
+                pub fn id(&self) -> [ < $name $postfix >] {
+                    self.0
+                }
+            }
+        }
+    };
 }
 
-#[derive(Clone)]
-#[repr(C)]
-struct Image(pub(crate) ImageId);
-
-impl Image {
-    pub fn id(&self) -> ImageId {
-        self.0
-    }
-}
-
-#[derive(Clone)]
-#[repr(C)]
-struct ImageView (pub(crate) ImageViewId);
-
-impl ImageView {
-    fn id(&self) -> ImageViewId {
-        self.0
-    }
-}
-
-#[derive(Clone)]
-#[repr(C)]
-pub struct Sampler(pub(crate) SamplerId);
-
-impl Sampler {
-    fn id(&self) -> SamplerId {
-        self.0
-    }
-}
+handle!(MemoryBlock);
+handle!(Image, Id);
+handle!(ImageView, Id);
+handle!(Buffer, Id);
+handle!(Sampler, Id);
+handle!(RasterPipeline);
+handle!(ComputePipeline);
+handle!(Swapchain);
+handle!(CommandRecorder);
+handle!(BinarySemaphore);
+handle!(TimelineSemaphore);
+handle!(Event);
+handle!(TimelineQueryPool);
 
 #[repr(u32)]
 pub enum CompareOp {
@@ -338,8 +348,6 @@ bitflags! {
         const MIN_TIME = daxa_sys::DAXA_MEMORY_FLAG_STRATEGY_MIN_TIME;
     }
 }
-
-pub type MemoryBlock = daxa_sys::daxa_MemoryBlock;
 
 pub struct MemoryRequirements {
     size: DeviceSize,
@@ -395,7 +403,7 @@ impl<T: 'static> From<std::option::Option<T>> for Option<T> {
             return Option {
                 data: unsafe { mem::MaybeUninit::uninit().assume_init() },
                 has_value: false,
-            }
+            };
         };
 
         Option {
@@ -407,41 +415,41 @@ impl<T: 'static> From<std::option::Option<T>> for Option<T> {
 
 impl<T: 'static> Into<std::option::Option<T>> for Option<T> {
     fn into(self) -> std::option::Option<T> {
-        let Option { has_value: true, .. } = &self else {
+        let Option {
+            has_value: true, ..
+        } = &self
+        else {
             return None;
         };
         Some(self.data)
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct FixedString<const Capacity: usize> {
     data: [std::os::raw::c_char; Capacity],
-    len: u8
+    len: u8,
 }
 
 impl<const Capacity: usize> FixedString<Capacity> {
-    pub unsafe fn from_ptr(ptr: *const os::raw::c_char, len: usize) -> Self {
+    pub unsafe fn from_ptr(ptr: *const os::raw::c_char, len: u8) -> Self {
         let mut data = [Default::default(); Capacity];
-        unsafe { std::ptr::copy(ptr, &mut data, len) };
-        Self {
-            data,
-            len,
-        }
+        unsafe { std::ptr::copy(ptr, &mut data as *mut _, len as _) };
+        Self { data, len }
     }
     pub unsafe fn from_ptr_null_terminated(ptr: *const os::raw::c_char) -> Self {
-        let mut len = 0;
-        while *ptr.add(len) != 0 {
+        let mut len = 0u8;
+        while *ptr.add(len as _) != 0 {
             len += 1;
         }
         Self::from_ptr(ptr, len)
     }
-    
 }
 
-impl<'a, const Capacity: usize> From<&'a str> for FixedString<Capacity>  {
+impl<'a, const Capacity: usize> From<&'a str> for FixedString<Capacity> {
     fn from(string: &'a str) -> Self {
         assert!(string.bytes().len() < Capacity);
-        unsafe { Self::from_ptr(string.as_bytes(), string.bytes().len()) }
+        unsafe { Self::from_ptr(string.as_bytes().as_ptr() as *const _, string.bytes().len() as u8) }
     }
 }
 
@@ -717,81 +725,6 @@ pub enum Format {
     R16g16S105Nv = daxa_sys::VkFormat_VK_FORMAT_R16G16_S10_5_NV,
     A1b5g5r5UnormPack16Khr = daxa_sys::VkFormat_VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
     A8UnormKhr = daxa_sys::VkFormat_VK_FORMAT_A8_UNORM_KHR,
-    Astc4x4SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT,
-    Astc5x4SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK_EXT,
-    Astc5x5SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK_EXT,
-    Astc6x5SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK_EXT,
-    Astc6x6SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK_EXT,
-    Astc8x5SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK_EXT,
-    Astc8x6SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK_EXT,
-    Astc8x8SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK_EXT,
-    Astc10x5SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK_EXT,
-    Astc10x6SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK_EXT,
-    Astc10x8SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK_EXT,
-    Astc10x10SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT,
-    Astc12x10SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT,
-    Astc12x12SfloatBlockExt = daxa_sys::VkFormat_VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT,
-    G8b8g8r8422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8B8G8R8_422_UNORM_KHR,
-    B8g8r8g8422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_B8G8R8G8_422_UNORM_KHR,
-    G8B8R83plane420UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR,
-    G8B8r82plane420UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR,
-    G8B8R83plane422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR,
-    G8B8r82plane422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR,
-    G8B8R83plane444UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR,
-    R10x6UnormPack16Khr = daxa_sys::VkFormat_VK_FORMAT_R10X6_UNORM_PACK16_KHR,
-    R10x6g10x6Unorm2pack16Khr = daxa_sys::VkFormat_VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR,
-    R10x6g10x6b10x6a10x6Unorm4pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR,
-    G10x6b10x6g10x6r10x6422Unorm4pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR,
-    B10x6g10x6r10x6g10x6422Unorm4pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR,
-    G10x6B10x6R10x63plane420Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR,
-    G10x6B10x6r10x62plane420Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR,
-    G10x6B10x6R10x63plane422Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR,
-    G10x6B10x6r10x62plane422Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR,
-    G10x6B10x6R10x63plane444Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR,
-    R12x4UnormPack16Khr = daxa_sys::VkFormat_VK_FORMAT_R12X4_UNORM_PACK16_KHR,
-    R12x4g12x4Unorm2pack16Khr = daxa_sys::VkFormat_VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR,
-    R12x4g12x4b12x4a12x4Unorm4pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR,
-    G12x4b12x4g12x4r12x4422Unorm4pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR,
-    B12x4g12x4r12x4g12x4422Unorm4pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR,
-    G12x4B12x4R12x43plane420Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR,
-    G12x4B12x4r12x42plane420Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR,
-    G12x4B12x4R12x43plane422Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR,
-    G12x4B12x4r12x42plane422Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR,
-    G12x4B12x4R12x43plane444Unorm3pack16Khr =
-        daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR,
-    G16b16g16r16422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G16B16G16R16_422_UNORM_KHR,
-    B16g16r16g16422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_B16G16R16G16_422_UNORM_KHR,
-    G16B16R163plane420UnormKhr =
-        daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR,
-    G16B16r162plane420UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR,
-    G16B16R163plane422UnormKhr =
-        daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR,
-    G16B16r162plane422UnormKhr = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR,
-    G16B16R163plane444UnormKhr =
-        daxa_sys::VkFormat_VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR,
-    G8B8r82plane444UnormExt = daxa_sys::VkFormat_VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
-    G10x6B10x6r10x62plane444Unorm3pack16Ext =
-        daxa_sys::VkFormat_VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
-    G12x4B12x4r12x42plane444Unorm3pack16Ext =
-        daxa_sys::VkFormat_VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
-    G16B16r162plane444UnormExt = daxa_sys::VkFormat_VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
-    A4r4g4b4UnormPack16Ext = daxa_sys::VkFormat_VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
-    A4b4g4r4UnormPack16Ext = daxa_sys::VkFormat_VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 }
 
 pub const VK_UUID_SIZE: usize = 16;
@@ -799,13 +732,13 @@ pub const VK_UUID_SIZE: usize = 16;
 pub type VkPhysicalDeviceLimits = daxa_sys::VkPhysicalDeviceLimits;
 pub type VkPhysicalDeviceSparseProperties = daxa_sys::VkPhysicalDeviceSparseProperties;
 
-pub struct VkPhysicalDeviceProperties<'a> {
+pub struct VkPhysicalDeviceProperties {
     api_version: u32,
     driver_version: u32,
     vendor_id: u32,
     device_id: u32,
     device_type: DeviceType,
-    device_name: StringView<'a>,
+    device_name: SmallString,
     pipeline_cache_uuid: [u8; VK_UUID_SIZE],
     limits: VkPhysicalDeviceLimits,
     sparse_properties: VkPhysicalDeviceSparseProperties,

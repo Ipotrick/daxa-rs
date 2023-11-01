@@ -39,13 +39,13 @@ impl Instance {
         use crate::types::Result;
         use Result::*;
         unsafe {
-            let c_info = info.as_ptr().cast::<daxa_sys::daxa_InstanceInfo>();
+            let c_info = (info as *const InstanceInfo).cast::<daxa_sys::daxa_InstanceInfo>();
 
             let mut c_instance = std::mem::zeroed();
 
             let c_result = daxa_sys::daxa_create_instance(c_info, &mut c_instance);
 
-            match mem::transmute::<Result>(c_result) {
+            match mem::transmute::<daxa_sys::daxa_Result, Result>(c_result) {
                 Success => Ok(Instance {
                     instance: c_instance,
                 }),
