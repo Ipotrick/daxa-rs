@@ -3,6 +3,7 @@ mod instance;
 mod pipeline;
 mod types;
 mod swapchain;
+mod command_recorder;
 pub use instance::*;
 pub use types::*;
 
@@ -14,5 +15,9 @@ mod tests {
             flags: crate::InstanceFlags::DEBUG_UTIL,
         })
         .unwrap();
+
+        let device = _instance.create_device(&Default::default()).unwrap();
+
+        let recorder = device.create_command_recorder(&Default::default()).unwrap();
     }
 }

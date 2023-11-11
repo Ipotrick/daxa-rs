@@ -1,4 +1,5 @@
 use std::mem;
+use crate::device::*;
 
 use crate::types::*;
 use bitflags::bitflags;
@@ -52,6 +53,19 @@ impl Instance {
                 MissingExtension => Err(InstanceCreateError::MissingExtension),
                 _ => Err(InstanceCreateError::Unknown),
             }
+        }
+    }
+
+    pub fn create_device(self: &Self, device_info: &DeviceInfo) -> std::result::Result<Device, crate::Result> {
+        unsafe
+        {
+            let device : daxa_sys::daxa_Device = std::mem::zeroed();
+            let daxa_result = daxa_sys::daxa_instance_create_device(
+                std::mem::transmute(self.instance),
+                std::mem::transmute(device_info),
+                std::mem::transmute(device)
+            );
+            Err(std::mem::transmute(daxa_result))
         }
     }
 

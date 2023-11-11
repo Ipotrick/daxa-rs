@@ -3,13 +3,14 @@ use std::{marker::PhantomData, mem, os};
 
 use crate::device::{Device, DeviceType};
 
+#[derive(Debug)]
 #[repr(i32)]
 pub enum Result {
     Success = daxa_sys::daxa_Result_DAXA_RESULT_SUCCESS,
     MissingExtension = daxa_sys::daxa_Result_DAXA_RESULT_MISSING_EXTENSION,
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum ImageLayout {
     Undefined = daxa_sys::daxa_ImageLayout_DAXA_IMAGE_LAYOUT_UNDEFINED,
     General = daxa_sys::daxa_ImageLayout_DAXA_IMAGE_LAYOUT_GENERAL,
@@ -107,7 +108,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct ImageViewType: u32 {
+    pub struct ImageViewType: i32 {
         const ONE_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_1D;
         const TWO_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_2D;
         const THREE_DIM = daxa_sys::VkImageViewType_VK_IMAGE_VIEW_TYPE_3D;
@@ -119,7 +120,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct Filter: u32 {
+    pub struct Filter: i32 {
         const NEAREST = daxa_sys::VkFilter_VK_FILTER_NEAREST;
         const LINEAR = daxa_sys::VkFilter_VK_FILTER_LINEAR;
         const CUBIC_EXT = daxa_sys::VkFilter_VK_FILTER_CUBIC_EXT;
@@ -128,7 +129,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct ImageCreateFlags: u32 {
+    pub struct ImageCreateFlags: i32 {
         const SPARSE_BINDING = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
         const SPARSE_RESIDENCY = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
         const SPARSE_ALIASED = daxa_sys::VkImageCreateFlagBits_VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
@@ -151,7 +152,7 @@ bitflags! {
     }
 }
 bitflags! {
-    pub struct ImageUsageFlags: u32 {
+    pub struct ImageUsageFlags: i32 {
         const TRANSFER_SRC = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         const TRANSFER_DST = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         const SAMPLED = daxa_sys::VkImageUsageFlagBits_VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -171,7 +172,7 @@ bitflags! {
     }
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum SamplerAddressMode {
     Repeat = daxa_sys::VkSamplerAddressMode_VK_SAMPLER_ADDRESS_MODE_REPEAT,
     MirroredRepeat = daxa_sys::VkSamplerAddressMode_VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
@@ -181,14 +182,14 @@ pub enum SamplerAddressMode {
         daxa_sys::VkSamplerAddressMode_VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum ReductionMode {
     WeightedAverage = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE,
     Min = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_MIN,
     Max = daxa_sys::VkSamplerReductionMode_VK_SAMPLER_REDUCTION_MODE_MAX,
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum BorderColor {
     FloatTransparentBlack = daxa_sys::VkBorderColor_VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
     IntTransparentBlack = daxa_sys::VkBorderColor_VK_BORDER_COLOR_INT_TRANSPARENT_BLACK,
@@ -202,15 +203,6 @@ pub enum Extent {
     OneDim(u32),
     TwoDim(u32, u32),
     ThreeDim(u32, u32, u32),
-}
-
-pub struct CommandSubmitInfo<'a> {
-    pub wait_stages: PipelineStageFlags,
-    pub cmd_recorders: &'a [CommandRecorder],
-    pub wait_binary_semaphores: &'a [BinarySemaphore],
-    pub signal_binary_semaphores: &'a [BinarySemaphore],
-    pub wait_timeline_semaphores: &'a [BinarySemaphore],
-    pub signal_timeline_semaphores: &'a [BinarySemaphore],
 }
 
 pub struct PresentInfo<'a> {
@@ -317,13 +309,12 @@ handle!(Sampler, Id);
 handle!(RasterPipeline);
 handle!(ComputePipeline);
 handle!(Swapchain);
-handle!(CommandRecorder);
 handle!(BinarySemaphore);
 handle!(TimelineSemaphore);
 handle!(Event);
 handle!(TimelineQueryPool);
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum CompareOp {
     Never = daxa_sys::VkCompareOp_VK_COMPARE_OP_NEVER,
     Less = daxa_sys::VkCompareOp_VK_COMPARE_OP_LESS,
@@ -453,9 +444,20 @@ impl<'a, const Capacity: usize> From<&'a str> for FixedString<Capacity> {
     }
 }
 
-pub type SmallString = FixedString<39>;
+pub type SmallString = FixedString<63>;
 
-#[repr(u32)]
+impl<const Capacity: usize>  Default for FixedString<Capacity> {
+    fn default() -> Self {
+        unsafe{
+            Self{
+                data: std::mem::zeroed(),
+                len: std::mem::zeroed(),
+            }
+        }
+    }
+}
+
+#[repr(i32)]
 pub enum Format {
     Undefined = daxa_sys::VkFormat_VK_FORMAT_UNDEFINED,
     R4g4UnormPack8 = daxa_sys::VkFormat_VK_FORMAT_R4G4_UNORM_PACK8,

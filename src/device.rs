@@ -2,9 +2,9 @@ use bitflags::bitflags;
 use std::mem;
 use std::sync;
 
-use crate::{pipeline::RasterPipelineInfo, swapchain::SwapchainInfo, types::*};
+use crate::{pipeline::RasterPipelineInfo, swapchain::SwapchainInfo, command_recorder::*, types::*};
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum DeviceType {
     Other = daxa_sys::daxa_DeviceType_DAXA_DEVICE_TYPE_OTHER,
     IntegratedGpu = daxa_sys::daxa_DeviceType_DAXA_DEVICE_TYPE_INTEGRATED_GPU,
@@ -15,7 +15,7 @@ pub enum DeviceType {
 
 bitflags! {
     #[derive(Default)]
-    pub struct DeviceFlags: u32 {
+    pub struct DeviceFlags: i32 {
         const BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT = daxa_sys::daxa_DeviceFlagBits_DAXA_DEVICE_FLAG_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
         const CONSERVATIVE_RASTERIZATION = daxa_sys::daxa_DeviceFlagBits_DAXA_DEVICE_FLAG_CONSERVATIVE_RASTERIZATION;
         const MESH_SHADER_BIT = daxa_sys::daxa_DeviceFlagBits_DAXA_DEVICE_FLAG_MESH_SHADER_BIT;
@@ -25,19 +25,40 @@ bitflags! {
     }
 }
 
-pub type DeviceSelector = extern "C" fn(*const VkPhysicalDeviceProperties) -> i32;
+pub type DeviceSelector = unsafe extern "C" fn(*const daxa_sys::daxa_DeviceProperties) -> i32;
 
 pub extern "C" fn default_device_selector(properties: *const VkPhysicalDeviceProperties) -> i32 {
     unsafe { daxa_sys::daxa_default_device_score(properties as *const _) }
 }
 
+#[repr(C)]
 pub struct DeviceInfo {
     selector: DeviceSelector,
     flags: DeviceFlags,
     max_allowed_images: u32,
     max_allowed_buffers: u32,
     max_allowed_samplers: u32,
-    name: String,
+    name: SmallString,
+}
+
+impl Default for DeviceInfo
+{
+    // TODO(GABE): this causes a link error...
+    // fn default() -> Self {
+    //     unsafe{
+    //         std::mem::transmute(daxa_sys::DAXA_DEFAULT_DEVICE_INFO)
+    //     }
+    // }
+    fn default() -> Self {
+        Self{
+            selector: daxa_sys::daxa_default_device_score,
+            flags: DeviceFlags::BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT,
+            max_allowed_images: 10000,
+            max_allowed_buffers: 10000,
+            max_allowed_samplers: 400,
+            name: Default::default(),
+        }
+    }
 }
 
 pub struct Device(daxa_sys::daxa_Device);
@@ -56,7 +77,7 @@ macro_rules! device_create_fn {
                     );
 
                     match mem::transmute::<daxa_sys::daxa_Result, Result>(c_result) {
-                        crate::Result::Success => Ok($type(handle)),
+                        crate::Result::Success => Ok(std::mem::transmute(handle)),
                         error => Err(error),
                     }
                 }
@@ -84,20 +105,20 @@ impl Device {
         }
     }
 
-    device_create_fn!(memory, MemoryBlock);
-    device_create_fn!(image, Image);
-    device_create_fn!(image_view, ImageView);
-    device_create_fn!(sampler, Sampler);
-    device_create_fn!(buffer, Buffer);
     //TODO: Patrick review these functions and make sure their signatures are correct. They seem to be correct (they all follow the same path/code), so using the same macro should be sound.
-    device_create_fn!(raster_pipeline, RasterPipeline);
-    device_create_fn!(compute_pipeline, ComputePipeline);
-    device_create_fn!(swapchain, Swapchain);
+    // device_create_fn!(memory, MemoryBlock);
+    // device_create_fn!(image, Image);
+    // device_create_fn!(image_view, ImageView);
+    // device_create_fn!(sampler, Sampler);
+    // device_create_fn!(buffer, Buffer);
+    // device_create_fn!(raster_pipeline, RasterPipeline);
+    // device_create_fn!(compute_pipeline, ComputePipeline);
+    // device_create_fn!(swapchain, Swapchain);
+    // device_create_fn!(binary_semaphore, BinarySemaphore);
+    // device_create_fn!(timeline_semaphore, TimelineSemaphore);
+    // device_create_fn!(event, Event);
+    // device_create_fn!(timeline_query_pool, TimelineQueryPool);
     device_create_fn!(command_recorder, CommandRecorder);
-    device_create_fn!(binary_semaphore, BinarySemaphore);
-    device_create_fn!(timeline_semaphore, TimelineSemaphore);
-    device_create_fn!(event, Event);
-    device_create_fn!(timeline_query_pool, TimelineQueryPool);
 
     pub fn is_buffer_valid(&self, buffer: BufferId) -> bool {
         unsafe { daxa_sys::daxa_dvc_is_buffer_valid(self.0, buffer) != 0 }

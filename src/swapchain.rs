@@ -29,7 +29,7 @@ pub enum PresentMode {
 
 bitflags::bitflags! {
     #[derive(Default)]
-    pub struct SurfaceTransformFlags: u32 {
+    pub struct SurfaceTransformFlags: i32 {
         const IDENTITY = daxa_sys::VkSurfaceTransformFlagBitsKHR_VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
         const ROTATE_90 = daxa_sys::VkSurfaceTransformFlagBitsKHR_VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR;
         const ROTATE_180 = daxa_sys::VkSurfaceTransformFlagBitsKHR_VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR;
@@ -54,49 +54,48 @@ pub struct SwapchainInfo {
     name: types::SmallString,
 }
 
-macro_rules! swapchain_fn {
-    ($name:ident, $ret:ty) => {
-        paste::item! {
-            pub fn $name (&self) -> $ret {
-                unsafe {
-                    std::mem::transmute(daxa_sys::[< daxa_swp_ $name >] (self.0))
-                }
-            }
-        }
-    };
-}
+// macro_rules! swapchain_fn {
+//     ($name:ident, $ret:ty) => {
+//         paste::item! {
+//             pub fn $name (&self) -> $ret {
+//                 unsafe {
+//                     std::mem::transmute(daxa_sys::[< daxa_swp_ $name >] (self.0))
+//                 }
+//             }
+//         }
+//     };
+// }
 
-impl Swapchain {
-    pub fn set_present_mode(&self, present_mode: PresentMode) -> types::Result {
-        unsafe { std::mem::transmute(daxa_sys::daxa_swp_set_present_mode(self.0, present_mode)) }
-    }
+// impl Swapchain {
+//     pub fn set_present_mode(&self, present_mode: PresentMode) -> types::Result {
+//         unsafe { std::mem::transmute(daxa_sys::daxa_swp_set_present_mode(self.0, std::mem::transmute(present_mode))) }
+//     }
 
-    pub fn acquire_next_image(&self) -> std::result::Result<types::ImageId, types::Result> {
-        unsafe {
-            let mut out_image_id: types::ImageId;
-            let res = std::mem::transmute(daxa_sys::daxa_swp_acquire_next_image(
-                self.0,
-                out_image_id.0,
-            ));
-            if res == types::Result::Success {
-                Ok(out_image_id)
-            } else {
-                Err(res)
-            }
-        }
-    }
+//     pub fn acquire_next_image(&self) -> std::result::Result<types::ImageId, types::Result> {
+//         unsafe {
+//             let mut out_image_id: types::ImageId;
+//             let res = std::mem::transmute(daxa_sys::daxa_swp_acquire_next_image(
+//                 self.0,
+//                 out_image_id.0,
+//             ));
+//             if res == types::Result::Success {
+//                 Ok(out_image_id)
+//             } else {
+//                 Err(res)
+//             }
+//         }
+//     }
 
-    swapchain_fn!(get_surface_extent, types::Extent);
-    swapchain_fn!(get_format, types::Format);
-    swapchain_fn!(resize, types::Result);
-    swapchain_fn!(get_acquire_semaphore, types::BinarySemaphore);
-    swapchain_fn!(get_present_semaphore, types::BinarySemaphore);
-    swapchain_fn!(get_gpu_timeline_semaphore, types::TimelineSemaphore);
-    swapchain_fn!(get_acquire_semaphore, types::BinarySemaphore);
-    swapchain_fn!(get_cpu_timeline_value, usize);
-    swapchain_fn!(info, SwapchainInfo);
-    swapchain_fn!(get_vk_swapchain, daxa_sys::VkSwapchainKHR);
-    swapchain_fn!(get_vk_surface, daxa_sys::VkSurfaceKHR);
-    swapchain_fn!(inc_refcnt, u64);
-    swapchain_fn!(dec_refcnt, u64);
-}
+//     swapchain_fn!(get_surface_extent, types::Extent);
+//     swapchain_fn!(get_format, types::Format);
+//     swapchain_fn!(resize, types::Result);
+//     swapchain_fn!(get_acquire_semaphore, types::BinarySemaphore);
+//     swapchain_fn!(get_present_semaphore, types::BinarySemaphore);
+//     swapchain_fn!(get_gpu_timeline_semaphore, types::TimelineSemaphore);
+//     swapchain_fn!(get_cpu_timeline_value, usize);
+//     swapchain_fn!(info, SwapchainInfo);
+//     swapchain_fn!(get_vk_swapchain, daxa_sys::VkSwapchainKHR);
+//     swapchain_fn!(get_vk_surface, daxa_sys::VkSurfaceKHR);
+//     swapchain_fn!(inc_refcnt, u64);
+//     swapchain_fn!(dec_refcnt, u64);
+// }

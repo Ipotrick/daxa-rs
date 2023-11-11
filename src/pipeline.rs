@@ -36,7 +36,7 @@ pub struct RenderAttachment {
     blend: types::Option<BlendInfo>,
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum BlendFactor {
     Zero = daxa_sys::VkBlendFactor_VK_BLEND_FACTOR_ZERO,
     One = daxa_sys::VkBlendFactor_VK_BLEND_FACTOR_ONE,
@@ -59,7 +59,7 @@ pub enum BlendFactor {
     OneMinusSrc1Alpha = daxa_sys::VkBlendFactor_VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum BlendOp {
     Add = daxa_sys::VkBlendOp_VK_BLEND_OP_ADD,
     Subtract = daxa_sys::VkBlendOp_VK_BLEND_OP_SUBTRACT,
@@ -116,7 +116,7 @@ pub enum BlendOp {
 
 bitflags! {
     #[derive(Default)]
-    pub struct ColorComponentFlags: u32 {
+    pub struct ColorComponentFlags: i32 {
         const R = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_R_BIT;
         const G = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_G_BIT;
         const B = daxa_sys::VkColorComponentFlagBits_VK_COLOR_COMPONENT_B_BIT;
@@ -152,7 +152,7 @@ impl Default for BlendInfo {
     }
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum TesselationDomainOrigin {
     UpperLeft = daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
     LowerLeft = daxa_sys::VkTessellationDomainOrigin_VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT,
@@ -164,7 +164,7 @@ pub struct TesselationInfo {
     origin: TesselationDomainOrigin,
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum PrimitiveTopology {
     PointList = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
     LineList = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
@@ -183,7 +183,7 @@ pub enum PrimitiveTopology {
     PatchList = daxa_sys::VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum PolygonMode {
     Fill = daxa_sys::VkPolygonMode_VK_POLYGON_MODE_FILL,
     Line = daxa_sys::VkPolygonMode_VK_POLYGON_MODE_LINE,
@@ -193,7 +193,7 @@ pub enum PolygonMode {
 
 bitflags! {
     #[derive(Default)]
-    pub struct CullModeFlags: u32 {
+    pub struct CullModeFlags: i32 {
         const NONE = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_NONE;
         const FRONT_BIT = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_FRONT_BIT;
         const BACK_BIT = daxa_sys::VkCullModeFlagBits_VK_CULL_MODE_BACK_BIT;
@@ -201,13 +201,13 @@ bitflags! {
     }
 }
 
-#[repr(u32)]
+#[repr(i32)]
 pub enum FrontFace {
     CounterClockwise = daxa_sys::VkFrontFace_VK_FRONT_FACE_COUNTER_CLOCKWISE,
     Clockwise = daxa_sys::VkFrontFace_VK_FRONT_FACE_CLOCKWISE,
 }
 
-#[repr(u32)]
+#[repr(i32)]
 #[derive(Default)]
 pub enum ConsevativeRasterizationModeEXT {
     #[default]
@@ -255,7 +255,7 @@ impl Default for RasterizerInfo {
             depth_bias_clamp: 0.0,
             depth_bias_slope_factor: 0.0,
             line_width: 1.0,
-            conservative_raster_info: Default::default(),
+            conservative_raster_info: types::Option::<ConsevativeRasterInfo>::from(None),
         }
     }
 }
